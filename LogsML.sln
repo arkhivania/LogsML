@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.28307.271
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MLRoots", "MLRoots\MLRoots.csproj", "{F1602600-1FFB-4561-929E-2016E03B1B06}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F1602600-1FFB-4561-929E-2016E03B1B06}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F1602600-1FFB-4561-929E-2016E03B1B06}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F1602600-1FFB-4561-929E-2016E03B1B06}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F1602600-1FFB-4561-929E-2016E03B1B06}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {4D03D192-C614-4D13-8540-24C5779ECAE2}
+	EndGlobalSection
+EndGlobal
