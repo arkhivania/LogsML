@@ -10,53 +10,49 @@ namespace MLRoots.Deduplication
     {
         const int TrainCount = 25;
 
-        private readonly string baseMessage;
-        private readonly uint label;
-
-        readonly List<string> trainSet = new List<string>();
-        public List<string> CompleteSet => completeSet;
-        readonly List<string> completeSet = new List<string>();
-
         public int CompleteCount => CompleteSet.Count;
 
-        public List<string> TrainSet => trainSet;
+        public List<string> CompleteSet { get; } = new List<string>();
+        public List<string> TrainSet { get; } = new List<string>();
 
-        public string BaseMessage => baseMessage;
-
-        public uint Label => label;
-
-        
+        public string BaseMessage { get; }
+        public uint Label { get; }
 
         readonly Random random = new Random();
 
         public OneItemBag(string baseMessage, uint label)
         {
-            this.baseMessage = baseMessage;
-            completeSet.Add(baseMessage);
-            trainSet.Add(baseMessage);
+            this.BaseMessage = baseMessage;
+            this.Label = label;
 
-            this.label = label;
+            CompleteSet.Add(baseMessage);
+            TrainSet.Add(baseMessage);
         }
 
         public void AddMessage(string message)
         {
             CompleteSet.Add(message);
 
-            if (trainSet.Count < TrainCount 
-                || trainSet.Count == 0)
-                if (random.Next(2) == 1)
-                    trainSet.Add(message);
+            if (TrainSet.Count < TrainCount)
+                if (random.Next(5) == 0)
+                    TrainSet.Add(message);
         }
 
         public byte[] GetCompressed()
         {
             using (var ms = new MemoryStream())
             {
-                using (var gzip = new GZipStream(ms, CompressionLevel.Optimal))
-                using (var swriter = new StreamWriter(gzip, Encoding.UTF8))
-                    foreach (var l in completeSet)
-                        swriter.WriteLine(l);
+                using (var zip = new ICSharpCode.SharpZipLib.GZip.GZipOutputStream(ms))
+                {
+                    zip.SetLevel(9);
+
+                    //                using (var gzip = new GZipStream(ms, CompressionLevel.Optimal))
+                    using (var swriter = new StreamWriter(zip, Encoding.UTF8))
+                        foreach (var l in CompleteSet)
+                            swriter.WriteLine(l);
+                }
                 return ms.ToArray();
+
             }
         }
     }

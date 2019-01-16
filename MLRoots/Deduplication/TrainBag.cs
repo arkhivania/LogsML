@@ -12,16 +12,30 @@ namespace MLRoots.Deduplication
     {
         public long PredictedCount { get; private set; } = 0;
         public long AllCount { get; private set; } = 0;
+        public long PredictionErrorsCount { get; private set; } = 0;
 
         readonly Random trainRandom = new Random(0);
         long? lastTrainTimeMs;
 
-        const double LThres = 0.75;        
+        const double LThres = 0.85;        
 
         PredictionEngine<LogRow, PointPrediction> prediction;
 
         readonly List<OneItemBag> oneItemBags = new List<OneItemBag>();
         public IEnumerable<OneItemBag> Bags => oneItemBags;
+
+        bool IsTheSame(string a, string b)
+        {
+            var dist_diff = System.Math.Abs(a.Length - b.Length);
+            var mid_l = (a.Length + b.Length + 1) / 2;
+            if ((double)dist_diff / mid_l > (1.0 - LThres))
+                return false;
+
+            var stepsToSame = Fastenshtein.Levenshtein.Distance(a, b);
+            var ls2 = (1.0 - (stepsToSame / (double)Math.Max(a.Length, b.Length)));            
+
+            return ls2 > LThres;
+        }
 
         class LogRow
         {
@@ -33,47 +47,6 @@ namespace MLRoots.Deduplication
         {
             [KeyType]
             public uint PredictedLabel { get; set; }
-        }
-
-        IEnumerable<LogRow> PrepareTrain(List<string> log_lines,
-            int count, double lthresh)
-        {
-            var r = new Random(0);
-            var learn_p = new Dictionary<string, LogRow>();
-
-            var labelsBase = new List<string>();
-
-            while (learn_p.Count != count
-                && learn_p.Count < log_lines.Count / 2)
-            {
-                var i = r.Next(log_lines.Count - 1);
-                var cs = log_lines[i];
-
-                if (!learn_p.ContainsKey(cs))
-                {
-                    int label = 0;
-                    for (; label < labelsBase.Count; ++label)
-                    {
-                        var bs = labelsBase[label];
-                        var ls2 = StringCompare.Algorithms
-                            .Levenshtein
-                            .LevenshteinAlgorithmExtension.CompareLevenshtein(bs, cs);
-                        if (ls2 > lthresh)
-                            break;
-                    }
-
-                    if (label == labelsBase.Count)
-                        labelsBase.Add(cs);
-
-                    learn_p.Add(log_lines[i], new LogRow
-                    {
-                        Content = cs,
-                        Label = (uint)label + 1
-                    });
-                }
-            }
-
-            return learn_p.Values;
         }
 
         void Train()
@@ -92,12 +65,13 @@ namespace MLRoots.Deduplication
 
             var trainer = mlContext.Transforms.Conversion
                 .MapValueToKey("Label", "Label")
-                .Append(mlContext.Transforms.Text
-                .FeaturizeText("Content", "Features"))
+                .Append(mlContext.Transforms
+                .Text.FeaturizeText("Content", "Features"))
                 .Append(
                     mlContext
                     .MulticlassClassification
-                    .Trainers.LightGbm());
+                    .Trainers
+                    .LightGbm());
 
             try
             {
@@ -120,28 +94,22 @@ namespace MLRoots.Deduplication
                     .PredictedLabel;
 
                 var item_bag = oneItemBags[(int)p_l - 1];
-                var dist = StringCompare.Algorithms
-                            .Levenshtein
-                            .LevenshteinAlgorithmExtension.CompareLevenshtein(item_bag.BaseMessage, message);
-
-                if (dist > LThres)
+                if (IsTheSame(item_bag.BaseMessage, message))
                 {
                     item_bag.AddMessage(message);
                     PredictedCount++;
                     AllCount++;
                     return;
                 }
+                else
+                    PredictionErrorsCount++;
             }
 
             var ct = Stopwatch.StartNew();
 
             foreach (var oib in oneItemBags)
             {
-                var dist = StringCompare.Algorithms
-                            .Levenshtein
-                            .LevenshteinAlgorithmExtension.CompareLevenshtein(oib.BaseMessage, message);
-
-                if (dist > LThres)
+                if (IsTheSame(oib.BaseMessage, message))
                 {
                     oib.AddMessage(message);
                     AllCount++;

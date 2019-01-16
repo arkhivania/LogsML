@@ -49,8 +49,12 @@ namespace MLRoots.Deduplication.Tests
 
             var t_b = new TrainBag();
 
+            var all_time = Stopwatch.StartNew();
+
             foreach (var m in log_lines)
                 t_b.Push(m);
+
+            all_time.Stop();
 
             var all_size = t_b
                 .Bags
@@ -68,7 +72,12 @@ namespace MLRoots.Deduplication.Tests
                     Compressed = compressed,
                     AllSize = all_size,
                     Ratio = (float)compressed / (float)all_size,
-                    RRatio = (float)all_size / (float)compressed
+                    RRatio = (float)all_size / (float)compressed, 
+                    CountInSec = log_lines.Count * 1000 / all_time.ElapsedMilliseconds,
+                    AllCount = t_b.AllCount, 
+                    Predicted = t_b.PredictedCount,
+                    PredictErrors = t_b.PredictionErrorsCount,
+                    PredictedP = (t_b.PredictedCount * 100L)/t_b.AllCount
                 });
         }
     }
