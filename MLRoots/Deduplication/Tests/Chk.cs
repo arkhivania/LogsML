@@ -36,10 +36,13 @@ namespace MLRoots.Deduplication.Tests
 
 
         [Test]
-        [TestCase(@"..\..\..\..\TestsData\lgs\syslog_short.zip")]
-        [TestCase(@"..\..\..\..\TestsData\lgs\full.zip")]
-        [TestCase(@"..\..\..\..\TestsData\lgs\printer.zip")]
-        public void Clusterization(string fileName)
+        [TestCase(true, @"..\..\..\..\TestsData\lgs\syslog_short.zip")]
+        [TestCase(true, @"..\..\..\..\TestsData\lgs\full.zip")]
+        [TestCase(true, @"..\..\..\..\TestsData\lgs\printer.zip")]
+        [TestCase(false, @"..\..\..\..\TestsData\lgs\syslog_short.zip")]
+        [TestCase(false, @"..\..\..\..\TestsData\lgs\full.zip")]
+        [TestCase(false, @"..\..\..\..\TestsData\lgs\printer.zip")]
+        public void Clusterization(bool usePrediction, string fileName)
         {
             var log_lines = new List<string>();
             Assert.That(File.Exists(fileName), "Input file not found");
@@ -48,7 +51,7 @@ namespace MLRoots.Deduplication.Tests
             Assert.That(log_lines.Count > 0, "Log lines not empty");
 
 
-            var t_b = new TrainBag(false);
+            var t_b = new TrainBag(usePrediction);
 
             var all_time = Stopwatch.StartNew();
 
@@ -79,7 +82,8 @@ namespace MLRoots.Deduplication.Tests
                     AllCount = t_b.AllCount, 
                     Predicted = t_b.PredictedCount,
                     PredictErrors = t_b.PredictionErrorsCount,
-                    PredictedP = (t_b.PredictedCount * 100L)/(t_b.PredictionTests + 1)
+                    PredictedP = (t_b.PredictedCount * 100L)/(t_b.PredictionTests + 1),
+                    t_b.TrainCount
                 });
         }
     }

@@ -17,6 +17,7 @@ namespace MLRoots.Deduplication
         public long LastTrainPredictionErrors { get; private set; } = 0;
         public long LastTrainPredictionCount { get; private set; } = 0;
         public long LastTrainDirectFireCount { get; private set; } = 0;
+        public int TrainCount { get; private set; } = 0;
 
         readonly Random trainRandom = new Random(0);
         private readonly bool usePrediction;
@@ -33,6 +34,7 @@ namespace MLRoots.Deduplication
             if ((double)dist_diff / mid_l > (1.0 - LThres))
                 return false;
 
+            //var stepsToSame = StringLEV.Distance(a, b);
             var stepsToSame = Fastenshtein.Levenshtein.Distance(a, b);
             var ls2 = (1.0 - (stepsToSame / (double)Math.Max(a.Length, b.Length)));            
 
@@ -89,7 +91,10 @@ namespace MLRoots.Deduplication
             for(int oiIndex = 0; oiIndex < OneItemBags.Count; ++oiIndex)
             {
                 if (IsTheSame(OneItemBags[oiIndex].BaseMessage, message))
-                    finded = oiIndex;                
+                {
+                    finded = oiIndex;
+                    break;
+                }
             }
 
             if(finded >= 0)
@@ -136,10 +141,17 @@ namespace MLRoots.Deduplication
                     mlContext
                     .MulticlassClassification
                     .Trainers
-                    .LightGbm());
+                    .LightGbm(advancedSettings: s => 
+                    {
+                        s.NumLeaves = 3;
+                        s.NumBoostRound = 2;
+                        s.NormalizeFeatures = NormalizeOption.Yes;
+                        s.MaxBin = 20;
+                    }));
 
             try
             {
+                TrainCount++;
                 var txt_model = trainer.Fit(train_DataView);
                 this.prediction = txt_model
                     .CreatePredictionEngine<LogRow, PointPrediction>(mlContext);
