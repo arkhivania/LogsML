@@ -11,18 +11,20 @@ namespace MLRoots.Deduplication
     class TrainBag
     {
         public long PredictedCount { get; private set; } = 0;
+        public long PredictionTests { get; private set; } = 0;
         public long AllCount { get; private set; } = 0;
         public long PredictionErrorsCount { get; private set; } = 0;
+        public long LastTrainPredictionErrors { get; private set; } = 0;
+        public long LastTrainPredictionCount { get; private set; } = 0;
+        public long LastTrainDirectFireCount { get; private set; } = 0;
 
         readonly Random trainRandom = new Random(0);
-        long? lastTrainTimeMs;
-
+        private readonly bool usePrediction;
         const double LThres = 0.85;        
 
         PredictionEngine<LogRow, PointPrediction> prediction;
 
-        readonly List<OneItemBag> oneItemBags = new List<OneItemBag>();
-        public IEnumerable<OneItemBag> Bags => oneItemBags;
+        public List<OneItemBag> OneItemBags { get; } = new List<OneItemBag>();
 
         bool IsTheSame(string a, string b)
         {
@@ -49,12 +51,75 @@ namespace MLRoots.Deduplication
             public uint PredictedLabel { get; set; }
         }
 
+        public TrainBag(bool usePrediction)
+        {
+            this.usePrediction = usePrediction;
+        }
+
+        public void Push(string message)
+        {
+            AllCount++;
+
+            if (prediction != null)
+            {
+                LastTrainPredictionCount++;
+                PredictionTests++;
+
+                var p_l = prediction
+                    .Predict(new LogRow { Content = message })
+                    .PredictedLabel;
+
+                var item_bag = OneItemBags[(int)p_l - 1];
+                if (IsTheSame(item_bag.BaseMessage, message))
+                {
+                    item_bag.AddMessage(message);
+                    PredictedCount++;
+
+                    return;
+                }
+                else
+                {
+                    PredictionErrorsCount++;
+                    LastTrainPredictionErrors++;
+                }
+            }
+
+            int finded = -1;
+
+            for(int oiIndex = 0; oiIndex < OneItemBags.Count; ++oiIndex)
+            {
+                if (IsTheSame(OneItemBags[oiIndex].BaseMessage, message))
+                    finded = oiIndex;                
+            }
+
+            if(finded >= 0)
+            {
+                var oib = OneItemBags[finded];
+                oib.AddMessage(message);
+                LastTrainDirectFireCount++;
+                UpdateTrain();
+
+                int rIndex = finded;
+                while (rIndex > 0 && oib.CompleteCount > OneItemBags[rIndex - 1].CompleteCount)
+                {
+                    OneItemBags.RemoveAt(rIndex);
+                    OneItemBags.Insert(rIndex - 1, oib);
+                    rIndex--;
+                }
+                return;
+            }
+
+            var noib = new OneItemBag(message, (uint)OneItemBags.Count + 1);
+            OneItemBags.Add(noib);
+            UpdateTrain();
+        }
+
         void Train()
         {
-            if (oneItemBags.Count < 2)
+            if (OneItemBags.Count < 2)
                 return;
 
-            var t_rows = (from q2 in oneItemBags
+            var t_rows = (from q2 in OneItemBags
                           let lab = q2.Label
                           from t_m in q2.TrainSet
                           select new LogRow { Content = t_m, Label = lab }).ToArray();
@@ -85,68 +150,31 @@ namespace MLRoots.Deduplication
             }
         }
 
-        public void Push(string message)
+        private void UpdateTrain()
         {
-            if (prediction != null)
+            if (!usePrediction)
+                return;
+
+            if (OneItemBags.Count > 10 && prediction == null
+                            || (prediction != null && LastTrainDirectFireCount > 1000))
             {
-                var p_l = prediction
-                    .Predict(new LogRow { Content = message })
-                    .PredictedLabel;
-
-                var item_bag = oneItemBags[(int)p_l - 1];
-                if (IsTheSame(item_bag.BaseMessage, message))
-                {
-                    item_bag.AddMessage(message);
-                    PredictedCount++;
-                    AllCount++;
-                    return;
-                }
-                else
-                    PredictionErrorsCount++;
-            }
-
-            var ct = Stopwatch.StartNew();
-
-            foreach (var oib in oneItemBags)
-            {
-                if (IsTheSame(oib.BaseMessage, message))
-                {
-                    oib.AddMessage(message);
-                    AllCount++;
-                    return;
-                }
-            }
-
-            ct.Stop();
-
-            var direct_time = ct.ElapsedMilliseconds;
-
-            var noib = new OneItemBag(message, (uint)oneItemBags.Count + 1);
-            oneItemBags.Add(noib);
-
-            long factor = 1 + (lastTrainTimeMs ?? 1) / (direct_time + 1);
-            if (trainRandom.Next((int)(factor/20)) == 0)
-            {
-                var t_time = Stopwatch.StartNew();
                 Train();
-                t_time.Stop();
+                LastTrainPredictionCount = 0;
+                LastTrainPredictionErrors = 0;
+                LastTrainDirectFireCount = 0;
 
-                if (AllCount != 0)
+                if (PredictionTests != 0)
                 {
-                    Trace.TraceInformation($"Predicted: {PredictedCount} / {AllCount} ({PredictedCount * 100L / AllCount} %)");
+                    Trace.TraceInformation($"Predicted: {PredictedCount} / {PredictionTests} ({PredictedCount * 100L / PredictionTests} %)");
 
                     Trace.TraceInformation(new
                     {
-                        GroupsCount = oneItemBags.Count,
-                        MaxInGroup = oneItemBags.Select(q => q.CompleteCount).Max(),
-                        GarbageGroups = oneItemBags.Where(q => q.CompleteCount < 10).Count()
+                        GroupsCount = OneItemBags.Count,
+                        MaxInGroup = OneItemBags.Select(q => q.CompleteCount).Max(),
+                        GarbageGroups = OneItemBags.Where(q => q.CompleteCount < 10).Count()
                     }.ToString());
                 }
-
-                lastTrainTimeMs = t_time.ElapsedMilliseconds;
             }
-
-            AllCount++;
-        }        
+        }
     }
 }

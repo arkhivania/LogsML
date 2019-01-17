@@ -38,6 +38,7 @@ namespace MLRoots.Deduplication.Tests
         [Test]
         [TestCase(@"..\..\..\..\TestsData\lgs\syslog_short.zip")]
         [TestCase(@"..\..\..\..\TestsData\lgs\full.zip")]
+        [TestCase(@"..\..\..\..\TestsData\lgs\printer.zip")]
         public void Clusterization(string fileName)
         {
             var log_lines = new List<string>();
@@ -47,7 +48,7 @@ namespace MLRoots.Deduplication.Tests
             Assert.That(log_lines.Count > 0, "Log lines not empty");
 
 
-            var t_b = new TrainBag();
+            var t_b = new TrainBag(false);
 
             var all_time = Stopwatch.StartNew();
 
@@ -57,12 +58,12 @@ namespace MLRoots.Deduplication.Tests
             all_time.Stop();
 
             var all_size = t_b
-                .Bags
+                .OneItemBags
                 .SelectMany(q => q.CompleteSet)
                 .Select(q => (long)q.Length).Sum();
 
             var compressed = t_b
-                .Bags
+                .OneItemBags
                 .Select(q => (long)q.GetCompressed().Length)
                 .Sum();
 
@@ -70,6 +71,7 @@ namespace MLRoots.Deduplication.Tests
                 new
                 {
                     Compressed = compressed,
+                    GroupsCount = t_b.OneItemBags.Count,
                     AllSize = all_size,
                     Ratio = (float)compressed / (float)all_size,
                     RRatio = (float)all_size / (float)compressed, 
@@ -77,7 +79,7 @@ namespace MLRoots.Deduplication.Tests
                     AllCount = t_b.AllCount, 
                     Predicted = t_b.PredictedCount,
                     PredictErrors = t_b.PredictionErrorsCount,
-                    PredictedP = (t_b.PredictedCount * 100L)/t_b.AllCount
+                    PredictedP = (t_b.PredictedCount * 100L)/(t_b.PredictionTests + 1)
                 });
         }
     }
