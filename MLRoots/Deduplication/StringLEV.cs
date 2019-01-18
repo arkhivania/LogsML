@@ -6,15 +6,20 @@ namespace MLRoots.Deduplication
 {
     class StringLEV
     {
-        public static int Distance(string value1, string value2)
+        public static int Distance(string value1, string value2, int[] tempBuff)
         {
+            if (tempBuff.Length < value1.Length
+                || tempBuff.Length < value2.Length)
+                throw new InvalidOperationException("temp buffer length less than string lengths");
+
             if (value2.Length == 0)
                 return value1.Length;
 
-            int[] costs = new int[value2.Length];
+            int costsLength = value2.Length;
+            int[] costs = tempBuff;
 
             // Add indexing for insertion to first row
-            for (int i = 0; i < costs.Length;)
+            for (int i = 0; i < costsLength;)
                 costs[i] = ++i;
 
             for (int i = 0; i < value1.Length; i++)
@@ -48,8 +53,7 @@ namespace MLRoots.Deduplication
                 }
             }
 
-            return costs[costs.Length - 1];
+            return costs[costsLength - 1];
         }
-
     }
 }

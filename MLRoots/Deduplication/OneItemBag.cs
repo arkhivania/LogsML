@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 using System.Text;
 
 namespace MLRoots.Deduplication
@@ -9,51 +10,39 @@ namespace MLRoots.Deduplication
     class OneItemBag
     {
         const int TrainCount = 25;
+        const int MessagesInBag = 1000;
 
-        public int CompleteCount => CompleteSet.Count;
+        public int CompleteCount => ZipStores.Select(q => q.Lines.Count).Sum();
+        public List<ZipStore> ZipStores { get; } = new List<ZipStore>();
 
-        public List<string> CompleteSet { get; } = new List<string>();
+        public IEnumerable<string> CompleteSet => ZipStores.SelectMany(q => q.Lines);
+
         public List<string> TrainSet { get; } = new List<string>();
 
         public string BaseMessage { get; }
         public uint Label { get; }
 
-        readonly Random random = new Random();
+        readonly Random random = new Random();        
 
         public OneItemBag(string baseMessage, uint label)
         {
             this.BaseMessage = baseMessage;
-            this.Label = label;
+            this.Label = label;            
 
-            CompleteSet.Add(baseMessage);
-            TrainSet.Add(baseMessage);
+            AddMessage(baseMessage, true);
         }
 
-        public void AddMessage(string message)
+        public void AddMessage(string message, bool forceAddToTrain = false)
         {
-            CompleteSet.Add(message);
+            if (ZipStores.Count == 0
+                || ZipStores[ZipStores.Count - 1].Lines.Count >= MessagesInBag)
+                ZipStores.Add(new ZipStore());
 
-            if (TrainSet.Count < TrainCount)
-                if (random.Next(5) == 0)
+            ZipStores[ZipStores.Count - 1].Store(message);
+
+            if (forceAddToTrain || TrainSet.Count < TrainCount)
+                if (forceAddToTrain || random.Next(5) == 0)
                     TrainSet.Add(message);
-        }
-
-        public byte[] GetCompressed()
-        {
-            using (var ms = new MemoryStream())
-            {
-                using (var zip = new ICSharpCode.SharpZipLib.GZip.GZipOutputStream(ms))
-                {
-                    zip.SetLevel(9);
-
-                    //                using (var gzip = new GZipStream(ms, CompressionLevel.Optimal))
-                    using (var swriter = new StreamWriter(zip, Encoding.UTF8))
-                        foreach (var l in CompleteSet)
-                            swriter.WriteLine(l);
-                }
-                return ms.ToArray();
-
-            }
         }
     }
 }
