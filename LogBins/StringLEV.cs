@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace MLRoots.Deduplication
+namespace LogBins
 {
     class StringLEV
     {

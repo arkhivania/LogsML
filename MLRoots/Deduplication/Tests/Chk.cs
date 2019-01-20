@@ -1,6 +1,5 @@
-﻿using Microsoft.ML;
-using Microsoft.ML.Data;
-using Microsoft.ML.LightGBM;
+﻿using LogBins;
+using LogBins.Base;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
@@ -9,7 +8,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Text;
-using static Microsoft.ML.Transforms.Normalizers.NormalizingEstimator;
+using System.Threading.Tasks;
 
 namespace MLRoots.Deduplication.Tests
 {
@@ -33,7 +32,34 @@ namespace MLRoots.Deduplication.Tests
                 }
         }
 
+        class MS : LogBins.Base.IMetaStorage
+        {
+            Dictionary<BagAddress, int> bagBuckets = new Dictionary<BagAddress, int>();
 
+            public Task<int> GetCurrentBucketIndexForBag(BagAddress bagAddress)
+            {
+                if (bagBuckets.TryGetValue(bagAddress, out int bv))
+                    return Task.FromResult(bv);
+
+                return Task.FromResult(0);
+            }
+
+            public Task StoreCurrentBucketIndexForBag(BagAddress bagAddress, int id)
+            {
+                bagBuckets[bagAddress] = id;
+                return Task.CompletedTask;
+            }
+
+            public Task<BagInfo[]> LoadBags(short trainId)
+            {
+                return Task.FromResult(new BagInfo[] { });
+            }
+
+            public Task RegisterNewBag(short trainId, BagInfo bagInfo)
+            {
+                return Task.CompletedTask;
+            }
+        }
 
         [Test]
         //[TestCase(true, @"..\..\..\..\TestsData\lgs\syslog_short.zip")]
@@ -42,8 +68,8 @@ namespace MLRoots.Deduplication.Tests
         [TestCase(@"..\..\..\..\TestsData\lgs\syslog_short.zip")]
         [TestCase(@"..\..\..\..\TestsData\lgs\full.zip")]
         [TestCase(@"..\..\..\..\TestsData\lgs\printer.zip")]
-        [TestCase(@"..\..\..\..\TestsData\lgs\printer_nlmode.zip")]        
-        public void Clusterization(string fileName)
+        [TestCase(@"..\..\..\..\TestsData\lgs\printer_nlmode.zip")]
+        public async Task Clusterization(string fileName)
         {
             var log_lines = new List<string>();
             Assert.That(File.Exists(fileName), "Input file not found");
@@ -51,39 +77,41 @@ namespace MLRoots.Deduplication.Tests
             log_lines.AddRange(LoadLines(fileName));
             Assert.That(log_lines.Count > 0, "Log lines not empty");
 
-
-            var t_b = new TrainBag();
+            var t_b = new TrainBag(0,
+                new LogBins.ZipBuckets.BucketFactory(),
+                new MS(),
+                new BagSettings { PerBucketMessages = 5000 });
 
             var all_time = Stopwatch.StartNew();
 
             foreach (var m in log_lines)
-                t_b.Push(m);
+                await t_b.Push(new LogBins.Base.LogEntry { Message = m });
 
             all_time.Stop();
 
-            var all_size = t_b
-                .OneItemBags
-                .SelectMany(q => q.CompleteSet)
-                .Select(q => (long)q.Length).Sum();
+            //var all_size = t_b
+            //    .OneItemBags
+            //    .SelectMany(q => q.CompleteSet)
+            //    .Select(q => (long)q.Message.Length).Sum();
 
-            var compressed = t_b
-                .OneItemBags
-                .SelectMany(q => q.ZipStores)
-                .Select(q => q.GetCompressed().Length)
-                .Sum();
+            //var compressed = t_b
+            //    .OneItemBags
+            //    .SelectMany(q => q.Buckets)
+            //    .Select(q => q.GetCompressed().Length)
+            //    .Sum();
 
-            TestContext.Write(
-                new
-                {
-                    Compressed = compressed,
-                    GroupsCount = t_b.OneItemBags.Count,
-                    AllSize = all_size,
-                    Ratio = (float)compressed / (float)all_size,
-                    RRatio = (float)all_size / (float)compressed, 
-                    CountInSec = log_lines.Count * 1000 / all_time.ElapsedMilliseconds,
-                    AllCount = t_b.AllCount, 
-                    MaxZips = t_b.OneItemBags.Select(q => q.ZipStores.Count).Max()
-                });
+            //TestContext.Write(
+            //    new
+            //    {
+            //        Compressed = compressed,
+            //        GroupsCount = t_b.OneItemBags.Count,
+            //        AllSize = all_size,
+            //        Ratio = (float)compressed / (float)all_size,
+            //        RRatio = (float)all_size / (float)compressed, 
+            //        CountInSec = log_lines.Count * 1000 / all_time.ElapsedMilliseconds,
+            //        AllCount = t_b.AllCount, 
+            //        MaxZips = t_b.OneItemBags.Select(q => q.Buckets.Count).Max()
+            //    });
         }
     }
 }
