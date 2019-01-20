@@ -6,23 +6,49 @@ using LogBins.Base;
 
 namespace LogBins.ZipBuckets
 {
-    class ZipStore : LogBins.Base.IBucketStore
+    class ZipStore : IBucketStore
     {
-        private readonly BucketAddress bucketInfo;
+        private readonly BucketAddress address;
+        private readonly IBucketStreamProvider bucketStreamProvider;
 
-        public ZipStore(BucketAddress bucketInfo)
+        public ZipStore(BucketAddress address, IBucketStreamProvider bucketStreamProvider)
         {
-            this.bucketInfo = bucketInfo;
+            this.address = address;
+            this.bucketStreamProvider = bucketStreamProvider;
         }
 
         public IEnumerable<LogEntry> LoadEntries()
         {
-            yield break;
+            byte[] buff = new byte[256];
+            using (var compressedStream = bucketStreamProvider.OpenRead(address))
+            {
+                if(compressedStream == null)
+                    yield break;
+
+                using (var zip = new ICSharpCode.SharpZipLib.GZip.GZipInputStream(compressedStream))
+                using (var breader = new BinaryReader(zip))
+                {
+                    while (zip.Position != zip.Length)
+                    {
+                        int cnt = breader.ReadInt32();
+                        if (buff.Length < cnt)
+                            buff = new byte[buff.Length + 1024];
+                        int readed = 0;
+                        while (readed != cnt)
+                            readed += zip.Read(buff, readed, cnt - readed);
+
+                        string message;
+                        message = Encoding.UTF8.GetString(buff, 0, cnt);
+
+                        yield return new LogEntry { Message = message };
+                    }
+                }
+            }
         }
 
         public void StoreEntries(IEnumerable<LogEntry> entries)
         {
-            using (var compressedStream = new MemoryStream())
+            using (var compressedStream = bucketStreamProvider.OpenWrite(address))
             using (var zip = new ICSharpCode.SharpZipLib.GZip.GZipOutputStream(compressedStream))
             using (var bw = new BinaryWriter(zip))
             {
@@ -35,7 +61,6 @@ namespace LogBins.ZipBuckets
                     zip.Write(bytes, 0, bytes.Length);
                 }
             }
-            
         }
     }
 }

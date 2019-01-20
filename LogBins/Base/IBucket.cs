@@ -11,5 +11,7 @@ namespace LogBins.Base
 
         Task<int> QueryMessagesCount();
         Task<AddEntryResult> AddEntry(LogEntry logEntry);
+
+        Task Close();
     }
 }

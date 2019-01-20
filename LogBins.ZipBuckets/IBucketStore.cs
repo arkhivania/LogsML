@@ -1,9 +1,10 @@
-﻿using System;
+﻿using LogBins.Base;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace LogBins.Base
+namespace LogBins.ZipBuckets
 {
     public interface IBucketStore
     {

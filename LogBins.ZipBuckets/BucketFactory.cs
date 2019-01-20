@@ -6,12 +6,12 @@ using LogBins.Base;
 
 namespace LogBins.ZipBuckets
 {
-    public class BucketFactory : LogBins.Base.IBucketFactory
+    public class BucketFactory : IBucketFactory
     {
         private readonly IBucketStoreFactory bucketStoreFactory;
 
-        public BucketFactory()
-            : this(new ZipStoreFactory())
+        public BucketFactory(IBucketStreamProvider bucketStreamProvider)
+            : this(new ZipStoreFactory(bucketStreamProvider))
         {
 
         }

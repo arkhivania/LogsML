@@ -69,7 +69,6 @@ namespace LogBins
                 costsTempBuffer = new int[System.Math.Max(a.Length, b.Length)];
 
             var stepsToSame = StringLEV.Distance(a, b, costsTempBuffer);
-            //var stepsToSame = Fastenshtein.Levenshtein.Distance(a, b);
             var ls2 = (1.0 - (stepsToSame / (double)Math.Max(a.Length, b.Length)));
 
             return ls2 > LThres;
@@ -130,6 +129,14 @@ namespace LogBins
             {
                 semaphore.Release();
             }
+        }
+
+        public async Task Close()
+        {
+            foreach (var b in Bags)
+                await b.Close();
+
+            Bags.Clear();
         }
     }
 }

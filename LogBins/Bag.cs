@@ -19,7 +19,7 @@ namespace LogBins
 
         private readonly short trainId;
         private readonly IMetaStorage metaStorage;
-        private readonly IBucketFactory bucketFactory;
+        readonly BucketsHoldOperator bucketsHoldOperator;
 
         LocalBucket? currentBucket;
 
@@ -35,7 +35,7 @@ namespace LogBins
             this.trainId = trainId;
             BagInfo = bagInfo;
             this.metaStorage = metaStorage;
-            this.bucketFactory = bucketFactory;
+            this.bucketsHoldOperator = new BucketsHoldOperator(bucketFactory);
         }
 
         public async Task<EntryAddress> AddMessage(Base.LogEntry message)
@@ -43,7 +43,7 @@ namespace LogBins
             if(currentBucket == null)
             {
                 var b_i = await metaStorage.GetCurrentBucketIndexForBag(this.BagInfo.Address);
-                var b = await bucketFactory.CreateBucket(new BucketAddress
+                var b = await bucketsHoldOperator.GetBucket(new BucketAddress
                 {
                     TrainId = trainId,
                     BagId = BagInfo.Address.BagId,
@@ -62,7 +62,7 @@ namespace LogBins
                 .Value
                 .MessagesCount == BagInfo.BagSettings.PerBucketMessages)
             {
-                var b = await bucketFactory.CreateBucket(new BucketAddress
+                var b = await bucketsHoldOperator.GetBucket(new BucketAddress
                 {
                     TrainId = trainId,
                     BagId = BagInfo.Address.BagId,
@@ -80,12 +80,18 @@ namespace LogBins
                 
             var entry = await currentBucket.Value
                 .Bucket.AddEntry(message);
+
             currentBucket = new LocalBucket
             {
                 Bucket = currentBucket.Value.Bucket,
                 MessagesCount = entry.MessagesInBucket
             };
             return entry.Address;
+        }
+
+        public async Task Close()
+        {
+            await bucketsHoldOperator.Close();
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using LogBins;
 using LogBins.Base;
+using LogBins.ZipBuckets;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
@@ -30,6 +31,19 @@ namespace MLRoots.Deduplication.Tests
                                 yield return log_line;
                         }
                 }
+        }
+
+        class SP : IBucketStreamProvider
+        {
+            public Stream OpenRead(BucketAddress bucketAddress)
+            {
+                return null;
+            }
+
+            public Stream OpenWrite(BucketAddress bucketAddress)
+            {
+                return new MemoryStream();
+            }
         }
 
         class MS : LogBins.Base.IMetaStorage
@@ -78,7 +92,7 @@ namespace MLRoots.Deduplication.Tests
             Assert.That(log_lines.Count > 0, "Log lines not empty");
 
             var t_b = new TrainBag(0,
-                new LogBins.ZipBuckets.BucketFactory(),
+                new BucketFactory(new SP()),
                 new MS(),
                 new BagSettings { PerBucketMessages = 5000 });
 
@@ -88,6 +102,8 @@ namespace MLRoots.Deduplication.Tests
                 await t_b.Push(new LogBins.Base.LogEntry { Message = m });
 
             all_time.Stop();
+
+            await t_b.Close();
 
             //var all_size = t_b
             //    .OneItemBags

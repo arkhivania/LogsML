@@ -6,7 +6,7 @@ using LogBins.Base;
 
 namespace LogBins.ZipBuckets
 {
-    class Bucket : IBucket, IDisposable
+    class Bucket : IBucket
     {
         readonly List<LogEntry> entries = new List<LogEntry>();
         private readonly IBucketStoreFactory bucketStoreFactory;
@@ -18,7 +18,7 @@ namespace LogBins.ZipBuckets
         IBucketStore store;
 
         public Bucket(BucketAddress bucketInfo, 
-            LogBins.Base.IBucketStoreFactory bucketStoreFactory)
+            IBucketStoreFactory bucketStoreFactory)
         {
             this.Info = bucketInfo;
             this.bucketStoreFactory = bucketStoreFactory;
@@ -50,15 +50,17 @@ namespace LogBins.ZipBuckets
             return Task.FromResult(res);
         }
 
-        public void Dispose()
-        {
-            if(isModified)
-                store.StoreEntries(entries);
-        }
-
         public Task<int> QueryMessagesCount()
         {
             return Task.FromResult(entries.Count);
+        }
+
+        public Task Close()
+        {
+            if (isModified)
+                store.StoreEntries(entries);
+
+            return Task.CompletedTask;
         }
     }
 }
