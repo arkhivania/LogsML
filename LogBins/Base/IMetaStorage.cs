@@ -7,9 +7,9 @@ namespace LogBins.Base
 {
     public interface IMetaStorage
     {
-        Task<BagInfo[]> LoadBags(short trainId);
-        Task RegisterNewBag(short trainId, BagInfo bagInfo);
-        Task<int> GetCurrentBucketIndexForBag(BagAddress bagAddress);
-        Task StoreCurrentBucketIndexForBag(BagAddress bagAddress, int id);
+        Task<BagInfo[]> LoadBags(ushort trainId);
+        Task RegisterNewBag(ushort trainId, BagInfo bagInfo);
+        Task<uint> GetCurrentBucketIndexForBag(BagAddress bagAddress);
+        Task StoreCurrentBucketIndexForBag(BagAddress bagAddress, uint id);
     }
 }

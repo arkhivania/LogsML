@@ -6,8 +6,8 @@ namespace LogBins.Base
 {
     public struct EntryAddress
     {
-        public short TrainId { get; set; }
-        public int BagId { get; set; }
-        public int Index { get; set; }
+        public ushort TrainId { get; set; }
+        public uint BagId { get; set; }
+        public ushort Index { get; set; }
     }
 }

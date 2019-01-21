@@ -11,6 +11,7 @@ namespace LogBins.ZipBuckets
         readonly List<LogEntry> entries = new List<LogEntry>();
         private readonly IBucketStoreFactory bucketStoreFactory;
         bool isModified = false;
+        bool isClosed = false;
         public BucketAddress Info { get; }
 
         public Task<int> MessagesCount => Task.FromResult(entries.Count);
@@ -39,7 +40,7 @@ namespace LogBins.ZipBuckets
             {
                 TrainId = Info.TrainId,
                 BagId = Info.BagId,
-                Index = entries.Count - 1
+                Index = (ushort)(entries.Count - 1)
             };
 
             var res = new AddEntryResult
@@ -58,8 +59,12 @@ namespace LogBins.ZipBuckets
         public Task Close()
         {
             if (isModified)
+            {
                 store.StoreEntries(entries);
+                isModified = false;
+            }
 
+            isClosed = true;
             return Task.CompletedTask;
         }
 

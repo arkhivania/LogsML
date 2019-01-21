@@ -29,8 +29,6 @@ namespace LogBins
 
         readonly Timer badTimeTimer;
 
-        readonly SkipList<BucketHolder> skipHolders = new SkipList<BucketHolder>(new TimeComparer());
-
         public BucketsHoldOperator(IBucketFactory bucketFactory)
         {   
             badTime = DateTime.UtcNow;
@@ -45,32 +43,29 @@ namespace LogBins
         {
             if (holders.TryGetValue(bucketAddress, out BucketHolder holder))
             {
-                skipHolders.Remove(holder);
                 holder.LastAccess = badTime;
-                skipHolders.Add(holder);
-                await Clean();
+                await Clean(new[] { holder });
                 return holder.Bucket;
             }
 
             var b = await bucketFactory.CreateBucket(bucketAddress);
             var new_holder = new BucketHolder { Bucket = b, LastAccess = badTime };
             holders[bucketAddress] = new_holder;
-            skipHolders.Add(new_holder);
-            await Clean();
+            await Clean(new[] { new_holder });
             return b;
         }
 
-        private async Task Clean()
+        private async Task Clean(IEnumerable<BucketHolder> holdHolders)
         {
             var ct = badTime;
-            var old_buckets = skipHolders
+            var old_buckets = holders.Values
+                .Except(holdHolders)
                 .TakeWhile(q => (ct - q.LastAccess) > TimeSpan.FromMinutes(1))
                 .ToArray();
 
             foreach(var ob in old_buckets)
             {
                 holders.Remove(ob.Bucket.Info);
-                skipHolders.Remove(ob);
                 await ob.Bucket.Close();
             }
         }

@@ -1,22 +1,17 @@
-﻿using LogBins;
-using LogBins.Base;
+﻿using LogBins.Base;
 using LogBins.ZipBuckets;
-using NUnit.Framework;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
-namespace MLRoots.Deduplication.Tests
+namespace LogBins.Import
 {
-    [TestFixture]
-    class Chk
+    class Program
     {
-        IEnumerable<string> LoadLines(string fileName)
+        static IEnumerable<string> LoadLines(string fileName)
         {
             using (var ar = ZipFile.OpenRead(fileName))
                 foreach (var e in ar.Entries
@@ -46,7 +41,7 @@ namespace MLRoots.Deduplication.Tests
                 }
             }
 
-            readonly Dictionary<BucketAddress, NCS> streams 
+            readonly Dictionary<BucketAddress, NCS> streams
                 = new Dictionary<BucketAddress, NCS>();
 
             public Stream OpenRead(BucketAddress bucketAddress)
@@ -92,70 +87,70 @@ namespace MLRoots.Deduplication.Tests
             }
         }
 
-        [Test]
-        //[TestCase(true, @"..\..\..\..\TestsData\lgs\syslog_short.zip")]
-        //[TestCase(true, @"..\..\..\..\TestsData\lgs\full.zip")]
-        //[TestCase(true, @"..\..\..\..\TestsData\lgs\printer.zip")]
-        [TestCase(@"..\..\..\..\TestsData\lgs\syslog_short.zip")]
-        [TestCase(@"..\..\..\..\TestsData\lgs\full.zip")]
-        [TestCase(@"..\..\..\..\TestsData\lgs\printer.zip")]
-        [TestCase(@"..\..\..\..\TestsData\lgs\printer_nlmode.zip")]
-        public async Task Clusterization(string fileName)
+        class ERCompare : IComparer<ER>
         {
-            var log_lines = new List<string>();
-            Assert.That(File.Exists(fileName), "Input file not found");
+            public int Compare(ER x, ER y)
+            {
+                var xea = x.EntryAddress;
+                var yea = y.EntryAddress;
 
-            log_lines.AddRange(LoadLines(fileName));
-            Assert.That(log_lines.Count > 0, "Log lines not empty");
+                ulong xa = ((ulong)xea.TrainId << 48) + ((ulong)xea.BagId << 16) + (ulong)xea.Index;
+                ulong ya = ((ulong)yea.TrainId << 48) + ((ulong)yea.BagId << 16) + (ulong)yea.Index;
+
+                return xa.CompareTo(ya);
+            }
+        }
+
+        class ER
+        {
+            public ER(EntryAddress entryAddress, string message)
+            {
+                EntryAddress = entryAddress;
+                Message = message;
+            }
+
+            public EntryAddress EntryAddress { get; }
+            public string Message { get; }
+        }
+
+        static async Task Main(string[] args)
+        {
+            var file = @"..\..\..\..\TestsData\lgs\syslog_short.zip";
 
             var t_b = new TrainBag(0,
                 new BucketFactory(new SP()),
                 new MS(),
                 new BagSettings { PerBucketMessages = 5000 });
 
-            var all_time = Stopwatch.StartNew();
+            var clist = new Maybe.SkipList.SkipList<ER>(new ERCompare());
+            //var chk_dict = new Dictionary<EntryAddress, string>();
 
-            var chk_dict = new Dictionary<EntryAddress, string>();
-
-            foreach (var m in log_lines.Take(50000))
+            int index = 0;
+            foreach (var l in LoadLines(file))
             {
-                var a = await t_b.Push(new LogEntry { Message = m });
-                chk_dict[a] = m;
+                var addr = await t_b.Push(new LogEntry { Message = l });
+                clist.Add(new ER(addr, l));
+                //chk_dict[addr] = l;
+
+
+                if ((++index) % 1000 == 0)
+                {
+                    Console.WriteLine($"{addr.Index}");
+                    Console.WriteLine($"{index} messages");
+                }
             }
 
-            all_time.Stop();
+            index = 0;
+            Console.WriteLine("Reading ...");
+            foreach (var s in clist)
+            {   
+                var entry = await t_b.ReadEntry(s.EntryAddress);
+                if (entry.Message != s.Message)
+                    throw new InvalidOperationException("Read write error");
 
-            foreach(var s in chk_dict)
-            {
-                var entry = await t_b.ReadEntry(s.Key);
-                Assert.AreEqual(entry.Message, s.Value);
+                if ((index++) % 1000 == 0)
+                    Console.WriteLine($"{index} messages");
             }
-
-            await t_b.Close();
-
-            //var all_size = t_b
-            //    .OneItemBags
-            //    .SelectMany(q => q.CompleteSet)
-            //    .Select(q => (long)q.Message.Length).Sum();
-
-            //var compressed = t_b
-            //    .OneItemBags
-            //    .SelectMany(q => q.Buckets)
-            //    .Select(q => q.GetCompressed().Length)
-            //    .Sum();
-
-            //TestContext.Write(
-            //    new
-            //    {
-            //        Compressed = compressed,
-            //        GroupsCount = t_b.OneItemBags.Count,
-            //        AllSize = all_size,
-            //        Ratio = (float)compressed / (float)all_size,
-            //        RRatio = (float)all_size / (float)compressed, 
-            //        CountInSec = log_lines.Count * 1000 / all_time.ElapsedMilliseconds,
-            //        AllCount = t_b.AllCount, 
-            //        MaxZips = t_b.OneItemBags.Select(q => q.Buckets.Count).Max()
-            //    });
         }
     }
 }

@@ -9,24 +9,27 @@ using LogBins.Base;
 
 namespace LogBins
 {
-    class TrainBag
+    public class TrainBag
     {
         public long AllCount { get; private set; } = 0;
-        const double LThres = 0.85;
+        
         private readonly Base.IBucketFactory bucketFactory;
         private readonly IMetaStorage metaStorage;
         private readonly BagSettings bagSettings;
         readonly SemaphoreSlim semaphore = new SemaphoreSlim(1, 1);
         
-        public short TrainId { get; }
+        public ushort TrainId { get; }
 
-        int[] costsTempBuffer = new int[100];
+        
+        readonly IBagCompare compare = new Processing.HSCompare();
+        //readonly IBagCompare compare = new Processing.LevCompare();
 
         public List<Bag> Bags { get; } = new List<Bag>();
+        public Dictionary<uint, Bag> bagIdToBag = new Dictionary<uint, Bag>();
 
         bool initialized = false;
 
-        public TrainBag(short trainId,
+        public TrainBag(ushort trainId,
             IBucketFactory bucketFactory,
             IMetaStorage metaStorage,
             BagSettings bagSettings)
@@ -50,28 +53,19 @@ namespace LogBins
                 foreach (var b in await metaStorage.LoadBags(TrainId))
                     Bags.Add(new Bag(TrainId, b, metaStorage, bucketFactory));
 
+                foreach (var b in Bags)
+                    await b.Init();
+
+                Bags.Sort((a,b) => -a.CurrentBucketId.CompareTo(b.CurrentBucketId));
+                foreach (var b in Bags)
+                    bagIdToBag[b.BagInfo.Address.BagId] = b;
+
                 initialized = true;
             }
             finally
             {
                 semaphore.Release();
             }
-        }
-
-        bool IsTheSame(string a, string b)
-        {
-            var dist_diff = System.Math.Abs(a.Length - b.Length);
-            var mid_l = (a.Length + b.Length + 1) / 2;
-            if ((double)dist_diff / mid_l > (1.0 - LThres))
-                return false;
-
-            if (costsTempBuffer.Length < System.Math.Max(a.Length, b.Length))
-                costsTempBuffer = new int[System.Math.Max(a.Length, b.Length)];
-
-            var stepsToSame = StringLEV.Distance(a, b, costsTempBuffer);
-            var ls2 = (1.0 - (stepsToSame / (double)Math.Max(a.Length, b.Length)));
-
-            return ls2 > LThres;
         }
 
         public async Task<LogEntry> ReadEntry(EntryAddress address)
@@ -85,7 +79,7 @@ namespace LogBins
             await semaphore.WaitAsync();
             try
             {
-                var bag = Bags[address.BagId];
+                var bag = bagIdToBag[address.BagId];
                 var entry = await bag.ReadEntry(address);
                 return entry;
             }
@@ -107,7 +101,7 @@ namespace LogBins
 
                 int finded = -1;
                 for (int oiIndex = 0; oiIndex < Bags.Count; ++oiIndex)
-                    if (IsTheSame(Bags[oiIndex].BaseMessage, logEntry.Message))
+                    if (compare.TheSame(Bags[oiIndex], logEntry.Message))
                     {
                         finded = oiIndex;
                         break;
@@ -133,7 +127,7 @@ namespace LogBins
                     Address = new BagAddress
                     {
                         TrainId = TrainId,
-                        BagId = Bags.Count + 1
+                        BagId = (uint)Bags.Count
                     },
                     BaseMessage = logEntry.Message,
                     BagSettings = new BagSettings { PerBucketMessages = 5000 }
@@ -142,6 +136,9 @@ namespace LogBins
                 await metaStorage.RegisterNewBag(TrainId, newBagInfo);
 
                 var noib = new Bag(TrainId, newBagInfo, metaStorage, bucketFactory);
+                await noib.Init();
+
+                bagIdToBag[noib.BagInfo.Address.BagId] = noib;
 
                 Bags.Add(noib);
                 return await noib.AddMessage(logEntry);

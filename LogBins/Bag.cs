@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace LogBins
 {
-    class Bag
+    public class Bag
     {
         struct LocalBucket
         {
@@ -17,25 +17,31 @@ namespace LogBins
             public int MessagesCount { get; set; }
         }
 
-        private readonly short trainId;
+        private readonly ushort trainId;
         private readonly IMetaStorage metaStorage;
         readonly BucketsHoldOperator bucketsHoldOperator;
 
         LocalBucket? currentBucket;
 
-        public int CurrentBucketId { get; }
+        public uint CurrentBucketId => currentBucket?.Bucket.Info.BucketId ?? 0;
 
         public BagInfo BagInfo { get; }
         public string BaseMessage => BagInfo.BaseMessage;
 
-        public Bag(short trainId, BagInfo bagInfo,
+        public Bag(ushort trainId, BagInfo bagInfo,
             IMetaStorage metaStorage,
             IBucketFactory bucketFactory)
         {
             this.trainId = trainId;
             BagInfo = bagInfo;
             this.metaStorage = metaStorage;
+
+            if (bagInfo.BagSettings.PerBucketMessages > (2 << 16))
+                throw new ArgumentException("PerBucketMessages must be < 2^16");
+
             this.bucketsHoldOperator = new BucketsHoldOperator(bucketFactory);
+
+            
         }
 
         public async Task<LogEntry> ReadEntry(EntryAddress address)
@@ -44,15 +50,15 @@ namespace LogBins
             {
                 TrainId = address.TrainId,
                 BagId = address.BagId,
-                BucketId = address.Index / BagInfo.BagSettings.PerBucketMessages
+                BucketId = (uint)(address.Index / BagInfo.BagSettings.PerBucketMessages)
             });
 
             return await b.GetEntry(address.Index);
         }
 
-        public async Task<EntryAddress> AddMessage(Base.LogEntry message)
+        public async Task Init()
         {
-            if(currentBucket == null)
+            if (currentBucket == null)
             {
                 var b_i = await metaStorage.GetCurrentBucketIndexForBag(this.BagInfo.Address);
                 var b = await bucketsHoldOperator.GetBucket(new BucketAddress
@@ -69,6 +75,12 @@ namespace LogBins
                     MessagesCount = count
                 };
             }
+        }
+
+        public async Task<EntryAddress> AddMessage(Base.LogEntry message)
+        {
+            if (currentBucket == null)
+                await Init();            
 
             if (currentBucket
                 .Value
