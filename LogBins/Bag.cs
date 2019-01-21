@@ -38,6 +38,18 @@ namespace LogBins
             this.bucketsHoldOperator = new BucketsHoldOperator(bucketFactory);
         }
 
+        public async Task<LogEntry> ReadEntry(EntryAddress address)
+        {
+            var b = await bucketsHoldOperator.GetBucket(new BucketAddress
+            {
+                TrainId = address.TrainId,
+                BagId = address.BagId,
+                BucketId = address.Index / BagInfo.BagSettings.PerBucketMessages
+            });
+
+            return await b.GetEntry(address.Index);
+        }
+
         public async Task<EntryAddress> AddMessage(Base.LogEntry message)
         {
             if(currentBucket == null)

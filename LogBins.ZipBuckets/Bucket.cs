@@ -62,5 +62,10 @@ namespace LogBins.ZipBuckets
 
             return Task.CompletedTask;
         }
+
+        public Task<LogEntry> GetEntry(int index)
+        {
+            return Task.FromResult(entries[index]);
+        }
     }
 }

@@ -35,18 +35,36 @@ namespace MLRoots.Deduplication.Tests
 
         class SP : IBucketStreamProvider
         {
+            readonly Dictionary<BucketAddress, MemoryStream> streams 
+                = new Dictionary<BucketAddress, MemoryStream>();
+
             public Stream OpenRead(BucketAddress bucketAddress)
             {
-                return null;
+                if (streams.TryGetValue(bucketAddress, out MemoryStream stream))
+                {
+                    stream.Seek(0, SeekOrigin.Begin);
+                    return stream;
+                }
+
+                return streams[bucketAddress] = new MemoryStream();
             }
 
             public Stream OpenWrite(BucketAddress bucketAddress)
             {
-                return new MemoryStream();
+                if (streams.TryGetValue(bucketAddress, out MemoryStream stream))
+                {
+                    stream.Seek(0, SeekOrigin.Begin);
+                    stream.SetLength(0);
+                    
+
+                    return stream;
+                }
+
+                return streams[bucketAddress] = new MemoryStream();
             }
         }
 
-        class MS : LogBins.Base.IMetaStorage
+        class MS : IMetaStorage
         {
             Dictionary<BagAddress, int> bagBuckets = new Dictionary<BagAddress, int>();
 
@@ -98,10 +116,21 @@ namespace MLRoots.Deduplication.Tests
 
             var all_time = Stopwatch.StartNew();
 
-            foreach (var m in log_lines)
-                await t_b.Push(new LogBins.Base.LogEntry { Message = m });
+            var chk_dict = new Dictionary<EntryAddress, string>();
+
+            foreach (var m in log_lines.Take(50000))
+            {
+                var a = await t_b.Push(new LogBins.Base.LogEntry { Message = m });
+                chk_dict[a] = m;
+            }
 
             all_time.Stop();
+
+            foreach(var s in chk_dict)
+            {
+                var entry = await t_b.ReadEntry(s.Key);
+                Assert.AreEqual(entry.Message, s.Value);
+            }
 
             await t_b.Close();
 

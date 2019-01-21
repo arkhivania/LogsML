@@ -22,7 +22,7 @@ namespace LogBins.ZipBuckets
             byte[] buff = new byte[256];
             using (var compressedStream = bucketStreamProvider.OpenRead(address))
             {
-                if(compressedStream == null)
+                if(compressedStream == null || compressedStream.Length == 0)
                     yield break;
 
                 using (var zip = new ICSharpCode.SharpZipLib.GZip.GZipInputStream(compressedStream))

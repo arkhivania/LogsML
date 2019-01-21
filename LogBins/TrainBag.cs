@@ -74,6 +74,27 @@ namespace LogBins
             return ls2 > LThres;
         }
 
+        public async Task<LogEntry> ReadEntry(EntryAddress address)
+        {
+            if (address.TrainId != TrainId)
+                throw new InvalidOperationException("Wrong train ID");
+
+            if (!initialized)
+                await Initialize();
+
+            await semaphore.WaitAsync();
+            try
+            {
+                var bag = Bags[address.BagId];
+                var entry = await bag.ReadEntry(address);
+                return entry;
+            }
+            finally
+            {
+                semaphore.Release();
+            }
+        }
+
         public async Task<EntryAddress> Push(Base.LogEntry logEntry)
         {
             if (!initialized)
