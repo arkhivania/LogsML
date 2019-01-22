@@ -20,10 +20,8 @@ namespace LogBins
         readonly SemaphoreSlim semaphore = new SemaphoreSlim(1, 1);
         
         public ushort TrainId { get; }
-
         
         readonly IBagCompare<Stat> compare = new HSCompare();
-        //readonly IBagCompare compare = new Processing.LevCompare();
 
         public List<Bag> Bags { get; } = new List<Bag>();
         readonly Dictionary<int, Bag> bagIdToBag = new Dictionary<int, Bag>();
@@ -171,8 +169,7 @@ namespace LogBins
 
         public void Dispose()
         {
-            Close()
-                .Wait();
+            Close().Wait();
         }
     }
 }
