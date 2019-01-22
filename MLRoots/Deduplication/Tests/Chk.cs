@@ -35,7 +35,7 @@ namespace MLRoots.Deduplication.Tests
 
         class SP : IBucketStreamProvider
         {
-            class NCS : MemoryStream
+            internal class NCS : MemoryStream
             {
                 public byte[] Data { get; private set; }
 
@@ -46,7 +46,7 @@ namespace MLRoots.Deduplication.Tests
                 }
             }
 
-            readonly Dictionary<BucketAddress, NCS> streams 
+            readonly internal Dictionary<BucketAddress, NCS> streams
                 = new Dictionary<BucketAddress, NCS>();
 
             public Stream OpenRead(BucketAddress bucketAddress)
@@ -65,6 +65,7 @@ namespace MLRoots.Deduplication.Tests
 
         class MS : IMetaStorage
         {
+            readonly List<BagInfo> bagInfos = new List<BagInfo>();
             Dictionary<BagAddress, int> bagBuckets = new Dictionary<BagAddress, int>();
 
             public Task<int> GetCurrentBucketIndexForBag(BagAddress bagAddress)
@@ -83,79 +84,85 @@ namespace MLRoots.Deduplication.Tests
 
             public Task<BagInfo[]> LoadBags(ushort trainId)
             {
-                return Task.FromResult(new BagInfo[] { });
+                return Task.FromResult(bagInfos.ToArray());
             }
 
             public Task RegisterNewBag(ushort trainId, BagInfo bagInfo)
             {
+                bagInfos.Add(bagInfo);
                 return Task.CompletedTask;
             }
         }
 
+        class ER
+        {
+            public ER(EntryAddress entryAddress, string message)
+            {
+                EntryAddress = entryAddress;
+                Message = message;
+            }
+
+            public EntryAddress EntryAddress { get; }
+            public string Message { get; }
+        }
+
         [Test]
-        //[TestCase(true, @"..\..\..\..\TestsData\lgs\syslog_short.zip")]
-        //[TestCase(true, @"..\..\..\..\TestsData\lgs\full.zip")]
-        //[TestCase(true, @"..\..\..\..\TestsData\lgs\printer.zip")]
         [TestCase(@"..\..\..\..\TestsData\lgs\syslog_short.zip")]
         [TestCase(@"..\..\..\..\TestsData\lgs\full.zip")]
         [TestCase(@"..\..\..\..\TestsData\lgs\printer.zip")]
         [TestCase(@"..\..\..\..\TestsData\lgs\printer_nlmode.zip")]
         public async Task Clusterization(string fileName)
         {
-            var log_lines = new List<string>();
-            Assert.That(File.Exists(fileName), "Input file not found");
+            var sp = new SP();
+            var ms = new MS();
 
-            log_lines.AddRange(LoadLines(fileName));
-            Assert.That(log_lines.Count > 0, "Log lines not empty");
+            var clist = new List<ER>();
 
-            var t_b = new TrainBag(0,
-                new BucketFactory(new SP()),
-                new MS(),
-                new BagSettings { PerBucketMessages = 5000 });
-
-            var all_time = Stopwatch.StartNew();
-
-            var chk_dict = new Dictionary<EntryAddress, string>();
-
-            foreach (var m in log_lines.Take(50000))
+            using (var t_b = new TrainBag(0,
+                new BucketFactory(sp),
+                ms,
+                new BagSettings { PerBucketMessages = 5000 }))
             {
-                var a = await t_b.Push(new LogEntry { Message = m });
-                chk_dict[a] = m;
+                int index = 0;
+                foreach (var l in LoadLines(fileName))
+                {
+                    var addr = await t_b.Push(new LogEntry { Message = l });
+                    clist.Add(new ER(addr, l));
+
+                    //if (!addrHS.Add(addr))
+                    //    throw new InvalidOperationException("HS already contains");
+
+                    if ((++index) % 100000 == 0)
+                    {
+                        TestContext.Progress.WriteLine($"{index} messages");
+                        //Console.WriteLine($"{addr.Index}");
+                        Console.WriteLine($"{index} messages");
+                    }
+                }
             }
 
-            all_time.Stop();
-
-            foreach(var s in chk_dict)
+            using (var t_b = new TrainBag(0,
+                new BucketFactory(sp),
+                ms,
+                new BagSettings { PerBucketMessages = 5000 }))
             {
-                var entry = await t_b.ReadEntry(s.Key);
-                Assert.AreEqual(entry.Message, s.Value);
+                var index = 0;
+                Console.WriteLine("Reading ...");
+                foreach (var s in clist)
+                {
+                    var entry = await t_b.ReadEntry(s.EntryAddress);
+                    if (entry.Message != s.Message)
+                        throw new InvalidOperationException("Read write error");
+
+                    if ((index++) % 100000 == 0)
+                        Console.WriteLine($"{index} messages");
+                }
             }
 
-            await t_b.Close();
-
-            //var all_size = t_b
-            //    .OneItemBags
-            //    .SelectMany(q => q.CompleteSet)
-            //    .Select(q => (long)q.Message.Length).Sum();
-
-            //var compressed = t_b
-            //    .OneItemBags
-            //    .SelectMany(q => q.Buckets)
-            //    .Select(q => q.GetCompressed().Length)
-            //    .Sum();
-
-            //TestContext.Write(
-            //    new
-            //    {
-            //        Compressed = compressed,
-            //        GroupsCount = t_b.OneItemBags.Count,
-            //        AllSize = all_size,
-            //        Ratio = (float)compressed / (float)all_size,
-            //        RRatio = (float)all_size / (float)compressed, 
-            //        CountInSec = log_lines.Count * 1000 / all_time.ElapsedMilliseconds,
-            //        AllCount = t_b.AllCount, 
-            //        MaxZips = t_b.OneItemBags.Select(q => q.Buckets.Count).Max()
-            //    });
+            var compressedSize = sp.streams
+                .Select(q => q.Value).Select(q => q.Data.Length).Sum();
+            var sourceSize = new FileInfo(fileName).Length;
+            Console.WriteLine($"Compression: {compressedSize} vs {sourceSize} ({(compressedSize * 100) / sourceSize})");
         }
     }
 }

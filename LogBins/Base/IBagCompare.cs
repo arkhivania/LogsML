@@ -4,8 +4,9 @@ using System.Text;
 
 namespace LogBins.Base
 {
-    interface IBagCompare
+    interface IBagCompare<IToken>
     {
-        bool TheSame(Bag bag, string message);
+        IToken GetMessageToken(string message);
+        bool TheSame(Bag bag, IToken token);
     }
 }

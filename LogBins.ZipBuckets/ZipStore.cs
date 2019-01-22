@@ -34,7 +34,7 @@ namespace LogBins.ZipBuckets
                     {
                         int cnt = breader.ReadInt32();
                         if (buff.Length < cnt)
-                            buff = new byte[buff.Length + 1024];
+                            buff = new byte[cnt + 1024];
                         int readed = 0;
                         while (readed != cnt)
                             readed += zip.Read(buff, readed, cnt - readed);

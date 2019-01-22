@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Threading;
 using LogBins.Base;
+using LogBins.Processing;
 
 namespace LogBins
 {
@@ -21,7 +22,7 @@ namespace LogBins
         public ushort TrainId { get; }
 
         
-        readonly IBagCompare compare = new Processing.HSCompare();
+        readonly IBagCompare<Stat> compare = new HSCompare();
         //readonly IBagCompare compare = new Processing.LevCompare();
 
         public List<Bag> Bags { get; } = new List<Bag>();
@@ -100,8 +101,10 @@ namespace LogBins
                 AllCount++;
 
                 int finded = -1;
+                var ms = compare.GetMessageToken(logEntry.Message);
+
                 for (int oiIndex = 0; oiIndex < Bags.Count; ++oiIndex)
-                    if (compare.TheSame(Bags[oiIndex], logEntry.Message))
+                    if (compare.TheSame(Bags[oiIndex], ms))
                     {
                         finded = oiIndex;
                         break;

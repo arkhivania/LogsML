@@ -9,7 +9,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LogBins", "LogBins\LogBins.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LogBins.ZipBuckets", "LogBins.ZipBuckets\LogBins.ZipBuckets.csproj", "{30DEFD66-8593-4A97-8BA2-626D08FC267B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LogBins.Import", "LogBins.Import\LogBins.Import.csproj", "{2E1C6AD7-53F6-4771-9B75-593147EB8439}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LogBins.RunTests", "LogBins.RunTests\LogBins.RunTests.csproj", "{4DFA9057-A5DF-45DA-9C70-92B3852033E6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -29,10 +29,10 @@ Global
 		{30DEFD66-8593-4A97-8BA2-626D08FC267B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{30DEFD66-8593-4A97-8BA2-626D08FC267B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{30DEFD66-8593-4A97-8BA2-626D08FC267B}.Release|Any CPU.Build.0 = Release|Any CPU
-		{2E1C6AD7-53F6-4771-9B75-593147EB8439}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{2E1C6AD7-53F6-4771-9B75-593147EB8439}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{2E1C6AD7-53F6-4771-9B75-593147EB8439}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{2E1C6AD7-53F6-4771-9B75-593147EB8439}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4DFA9057-A5DF-45DA-9C70-92B3852033E6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4DFA9057-A5DF-45DA-9C70-92B3852033E6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4DFA9057-A5DF-45DA-9C70-92B3852033E6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4DFA9057-A5DF-45DA-9C70-92B3852033E6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
