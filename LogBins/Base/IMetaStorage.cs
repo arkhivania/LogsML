@@ -9,7 +9,7 @@ namespace LogBins.Base
     {
         Task<BagInfo[]> LoadBags(ushort trainId);
         Task RegisterNewBag(ushort trainId, BagInfo bagInfo);
-        Task<uint> GetCurrentBucketIndexForBag(BagAddress bagAddress);
-        Task StoreCurrentBucketIndexForBag(BagAddress bagAddress, uint id);
+        Task<int> GetCurrentBucketIndexForBag(BagAddress bagAddress);
+        Task StoreCurrentBucketIndexForBag(BagAddress bagAddress, int id);
     }
 }

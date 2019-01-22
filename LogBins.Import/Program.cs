@@ -30,7 +30,7 @@ namespace LogBins.Import
 
         class SP : IBucketStreamProvider
         {
-            class NCS : MemoryStream
+            internal class NCS : MemoryStream
             {
                 public byte[] Data { get; private set; }
 
@@ -41,7 +41,7 @@ namespace LogBins.Import
                 }
             }
 
-            readonly Dictionary<BucketAddress, NCS> streams
+            readonly internal Dictionary<BucketAddress, NCS> streams
                 = new Dictionary<BucketAddress, NCS>();
 
             public Stream OpenRead(BucketAddress bucketAddress)
@@ -60,17 +60,18 @@ namespace LogBins.Import
 
         class MS : IMetaStorage
         {
-            Dictionary<BagAddress, uint> bagBuckets = new Dictionary<BagAddress, uint>();
+            readonly List<BagInfo> bagInfos = new List<BagInfo>();
+            Dictionary<BagAddress, int> bagBuckets = new Dictionary<BagAddress, int>();
 
-            public Task<uint> GetCurrentBucketIndexForBag(BagAddress bagAddress)
+            public Task<int> GetCurrentBucketIndexForBag(BagAddress bagAddress)
             {
-                if (bagBuckets.TryGetValue(bagAddress, out uint bv))
+                if (bagBuckets.TryGetValue(bagAddress, out int bv))
                     return Task.FromResult(bv);
 
-                return Task.FromResult(0u);
+                return Task.FromResult(0);
             }
 
-            public Task StoreCurrentBucketIndexForBag(BagAddress bagAddress, uint id)
+            public Task StoreCurrentBucketIndexForBag(BagAddress bagAddress, int id)
             {
                 bagBuckets[bagAddress] = id;
                 return Task.CompletedTask;
@@ -78,26 +79,13 @@ namespace LogBins.Import
 
             public Task<BagInfo[]> LoadBags(ushort trainId)
             {
-                return Task.FromResult(new BagInfo[] { });
+                return Task.FromResult(bagInfos.ToArray());
             }
 
             public Task RegisterNewBag(ushort trainId, BagInfo bagInfo)
             {
+                bagInfos.Add(bagInfo);
                 return Task.CompletedTask;
-            }
-        }
-
-        class ERCompare : IComparer<ER>
-        {
-            public int Compare(ER x, ER y)
-            {
-                var xea = x.EntryAddress;
-                var yea = y.EntryAddress;
-
-                ulong xa = ((ulong)xea.TrainId << 48) + ((ulong)xea.BagId << 16) + (ulong)xea.Index;
-                ulong ya = ((ulong)yea.TrainId << 48) + ((ulong)yea.BagId << 16) + (ulong)yea.Index;
-
-                return xa.CompareTo(ya);
             }
         }
 
@@ -117,40 +105,55 @@ namespace LogBins.Import
         {
             var file = @"..\..\..\..\TestsData\lgs\syslog_short.zip";
 
-            var t_b = new TrainBag(0,
-                new BucketFactory(new SP()),
-                new MS(),
-                new BagSettings { PerBucketMessages = 5000 });
+            var sp = new SP();
+            var ms = new MS();
 
-            var clist = new Maybe.SkipList.SkipList<ER>(new ERCompare());
-            //var chk_dict = new Dictionary<EntryAddress, string>();
+            var clist = new List<ER>();
 
-            int index = 0;
-            foreach (var l in LoadLines(file))
+            using (var t_b = new TrainBag(0,
+                new BucketFactory(sp),
+                ms,
+                new BagSettings { PerBucketMessages = 5000 }))
             {
-                var addr = await t_b.Push(new LogEntry { Message = l });
-                clist.Add(new ER(addr, l));
-                //chk_dict[addr] = l;
-
-
-                if ((++index) % 1000 == 0)
+                int index = 0;
+                foreach (var l in LoadLines(file))
                 {
-                    Console.WriteLine($"{addr.Index}");
-                    Console.WriteLine($"{index} messages");
+                    var addr = await t_b.Push(new LogEntry { Message = l });
+                    clist.Add(new ER(addr, l));
+
+                    //if (!addrHS.Add(addr))
+                    //    throw new InvalidOperationException("HS already contains");
+
+                    if ((++index) % 1000 == 0)
+                    {
+                        Console.WriteLine($"{addr.Index}");
+                        Console.WriteLine($"{index} messages");
+                    }
                 }
             }
 
-            index = 0;
-            Console.WriteLine("Reading ...");
-            foreach (var s in clist)
-            {   
-                var entry = await t_b.ReadEntry(s.EntryAddress);
-                if (entry.Message != s.Message)
-                    throw new InvalidOperationException("Read write error");
+            using (var t_b = new TrainBag(0,
+                new BucketFactory(sp),
+                ms,
+                new BagSettings { PerBucketMessages = 5000 }))
+            {
+                var index = 0;
+                Console.WriteLine("Reading ...");
+                foreach (var s in clist)
+                {
+                    var entry = await t_b.ReadEntry(s.EntryAddress);
+                    if (entry.Message != s.Message)
+                        throw new InvalidOperationException("Read write error");
 
-                if ((index++) % 1000 == 0)
-                    Console.WriteLine($"{index} messages");
+                    if ((index++) % 1000 == 0)
+                        Console.WriteLine($"{index} messages");
+                }
             }
+
+            var compressedSize = sp.streams
+                .Select(q => q.Value).Select(q => q.Data.Length).Sum();
+            var sourceSize = new FileInfo(file).Length;
+            Console.WriteLine($"Compression: {compressedSize} vs {sourceSize} ({(compressedSize * 100)/ sourceSize})");
         }
     }
 }

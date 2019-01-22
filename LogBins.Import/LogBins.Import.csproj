@@ -9,10 +9,6 @@
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Maybe.NET" Version="1.0.121" />
-  </ItemGroup>
-
 
   <ItemGroup>
     <ProjectReference Include="..\LogBins.ZipBuckets\LogBins.ZipBuckets.csproj" />

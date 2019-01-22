@@ -23,7 +23,7 @@ namespace LogBins
 
         LocalBucket? currentBucket;
 
-        public uint CurrentBucketId => currentBucket?.Bucket.Info.BucketId ?? 0;
+        public int CurrentBucketId => currentBucket?.Bucket.Info.BucketId ?? 0;
 
         public BagInfo BagInfo { get; }
         public string BaseMessage => BagInfo.BaseMessage;
@@ -40,8 +40,6 @@ namespace LogBins
                 throw new ArgumentException("PerBucketMessages must be < 2^16");
 
             this.bucketsHoldOperator = new BucketsHoldOperator(bucketFactory);
-
-            
         }
 
         public async Task<LogEntry> ReadEntry(EntryAddress address)
@@ -50,10 +48,10 @@ namespace LogBins
             {
                 TrainId = address.TrainId,
                 BagId = address.BagId,
-                BucketId = (uint)(address.Index / BagInfo.BagSettings.PerBucketMessages)
+                BucketId = address.Index / BagInfo.BagSettings.PerBucketMessages
             });
 
-            return await b.GetEntry(address.Index);
+            return await b.GetEntry(address.Index % BagInfo.BagSettings.PerBucketMessages);
         }
 
         public async Task Init()
@@ -110,7 +108,12 @@ namespace LogBins
                 Bucket = currentBucket.Value.Bucket,
                 MessagesCount = entry.MessagesInBucket
             };
-            return entry.Address;
+            return new EntryAddress
+            {
+                BagId = BagInfo.Address.BagId,
+                TrainId = BagInfo.Address.TrainId,
+                Index = (currentBucket.Value.Bucket.Info.BucketId * BagInfo.BagSettings.PerBucketMessages) + entry.Index
+            };
         }
 
         public async Task Close()

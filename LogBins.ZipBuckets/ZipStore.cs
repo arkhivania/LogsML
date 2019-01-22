@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using LogBins.Base;
 
@@ -28,7 +29,8 @@ namespace LogBins.ZipBuckets
                 using (var zip = new ICSharpCode.SharpZipLib.GZip.GZipInputStream(compressedStream))
                 using (var breader = new BinaryReader(zip))
                 {
-                    while (zip.Position != zip.Length)
+                    var count = breader.ReadInt32();
+                    for(int j = 0; j < count; ++j)
                     {
                         int cnt = breader.ReadInt32();
                         if (buff.Length < cnt)
@@ -53,6 +55,7 @@ namespace LogBins.ZipBuckets
             using (var bw = new BinaryWriter(zip))
             {
                 zip.SetLevel(9);
+                bw.Write((int)entries.Count());
 
                 foreach (var e in entries)
                 {

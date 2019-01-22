@@ -65,17 +65,17 @@ namespace MLRoots.Deduplication.Tests
 
         class MS : IMetaStorage
         {
-            Dictionary<BagAddress, uint> bagBuckets = new Dictionary<BagAddress, uint>();
+            Dictionary<BagAddress, int> bagBuckets = new Dictionary<BagAddress, int>();
 
-            public Task<uint> GetCurrentBucketIndexForBag(BagAddress bagAddress)
+            public Task<int> GetCurrentBucketIndexForBag(BagAddress bagAddress)
             {
-                if (bagBuckets.TryGetValue(bagAddress, out uint bv))
+                if (bagBuckets.TryGetValue(bagAddress, out int bv))
                     return Task.FromResult(bv);
 
-                return Task.FromResult(0u);
+                return Task.FromResult(0);
             }
 
-            public Task StoreCurrentBucketIndexForBag(BagAddress bagAddress, uint id)
+            public Task StoreCurrentBucketIndexForBag(BagAddress bagAddress, int id)
             {
                 bagBuckets[bagAddress] = id;
                 return Task.CompletedTask;

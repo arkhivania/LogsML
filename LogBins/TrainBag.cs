@@ -9,7 +9,7 @@ using LogBins.Base;
 
 namespace LogBins
 {
-    public class TrainBag
+    public class TrainBag : IDisposable
     {
         public long AllCount { get; private set; } = 0;
         
@@ -25,7 +25,7 @@ namespace LogBins
         //readonly IBagCompare compare = new Processing.LevCompare();
 
         public List<Bag> Bags { get; } = new List<Bag>();
-        public Dictionary<uint, Bag> bagIdToBag = new Dictionary<uint, Bag>();
+        public Dictionary<int, Bag> bagIdToBag = new Dictionary<int, Bag>();
 
         bool initialized = false;
 
@@ -127,7 +127,7 @@ namespace LogBins
                     Address = new BagAddress
                     {
                         TrainId = TrainId,
-                        BagId = (uint)Bags.Count
+                        BagId = Bags.Count
                     },
                     BaseMessage = logEntry.Message,
                     BagSettings = new BagSettings { PerBucketMessages = 5000 }
@@ -155,6 +155,12 @@ namespace LogBins
                 await b.Close();
 
             Bags.Clear();
+        }
+
+        public void Dispose()
+        {
+            Close()
+                .Wait();
         }
     }
 }

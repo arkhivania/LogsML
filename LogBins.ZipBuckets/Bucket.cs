@@ -45,9 +45,9 @@ namespace LogBins.ZipBuckets
 
             var res = new AddEntryResult
             {
-                Address = id,
+                Index = entries.Count - 1,
                 MessagesInBucket = entries.Count
-            };
+            };            
             return Task.FromResult(res);
         }
 

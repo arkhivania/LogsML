@@ -7,6 +7,6 @@ namespace LogBins.Base
     public struct AddEntryResult
     {
         public int MessagesInBucket { get; set; }
-        public EntryAddress Address { get; set; }
+        public int Index { get; set; }
     }
 }
