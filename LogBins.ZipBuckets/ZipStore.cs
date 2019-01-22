@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using LogBins.Base;
+using LogBins.Simple;
 
 namespace LogBins.ZipBuckets
 {

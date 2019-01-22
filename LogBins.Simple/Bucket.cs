@@ -4,7 +4,7 @@ using System.Text;
 using System.Threading.Tasks;
 using LogBins.Base;
 
-namespace LogBins.ZipBuckets
+namespace LogBins.Simple
 {
     class Bucket : IBucket
     {

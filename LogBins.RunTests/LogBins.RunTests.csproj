@@ -15,9 +15,9 @@
 
 
   <ItemGroup>
+    <ProjectReference Include="..\LogBins.Tests\LogBins.Tests.csproj" />
     <ProjectReference Include="..\LogBins.ZipBuckets\LogBins.ZipBuckets.csproj" />
     <ProjectReference Include="..\LogBins\LogBins.csproj" />
-    <ProjectReference Include="..\MLRoots\MLRoots.csproj" />
   </ItemGroup>
 
 </Project>

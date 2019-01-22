@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace LogBins.ZipBuckets
+namespace LogBins.Simple
 {
     public interface IBucketStore
     {

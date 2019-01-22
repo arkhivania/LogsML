@@ -1,5 +1,6 @@
 ﻿using System.Threading.Tasks;
 using LogBins.Base;
+using LogBins.Simple;
 
 namespace LogBins.ZipBuckets
 {

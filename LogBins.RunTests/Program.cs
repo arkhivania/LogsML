@@ -14,7 +14,7 @@ namespace LogBins.Import
         static int Main(string[] args)
         {   
             return new NUnitLite
-                .AutoRun(typeof(MLRoots.Deduplication.Tests.Chk).Assembly)
+                .AutoRun(typeof(LogBins.Tests.Chk).Assembly)
                 .Execute(args);
         }
     }

@@ -14,7 +14,7 @@ namespace LogBins
     {
         public long AllCount { get; private set; } = 0;
         
-        private readonly Base.IBucketFactory bucketFactory;
+        private readonly IBucketFactory bucketFactory;
         private readonly IMetaStorage metaStorage;
         private readonly BagSettings bagSettings;
         readonly SemaphoreSlim semaphore = new SemaphoreSlim(1, 1);
@@ -154,10 +154,19 @@ namespace LogBins
 
         public async Task Close()
         {
-            foreach (var b in Bags)
-                await b.Close();
+            await semaphore.WaitAsync();
 
-            Bags.Clear();
+            try
+            {
+                foreach (var b in Bags)
+                    await b.Close();
+
+                Bags.Clear();
+            }
+            finally
+            {
+                semaphore.Release();
+            }
         }
 
         public void Dispose()

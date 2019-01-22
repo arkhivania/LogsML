@@ -1,5 +1,6 @@
 ﻿using LogBins;
 using LogBins.Base;
+using LogBins.Simple;
 using LogBins.ZipBuckets;
 using NUnit.Framework;
 using System;
@@ -11,7 +12,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MLRoots.Deduplication.Tests
+namespace LogBins.Tests
 {
     [TestFixture]
     class Chk
@@ -66,7 +67,7 @@ namespace MLRoots.Deduplication.Tests
         class MS : IMetaStorage
         {
             readonly List<BagInfo> bagInfos = new List<BagInfo>();
-            Dictionary<BagAddress, int> bagBuckets = new Dictionary<BagAddress, int>();
+            readonly Dictionary<BagAddress, int> bagBuckets = new Dictionary<BagAddress, int>();
 
             public Task<int> GetCurrentBucketIndexForBag(BagAddress bagAddress)
             {
@@ -119,7 +120,7 @@ namespace MLRoots.Deduplication.Tests
             var clist = new List<ER>();
 
             using (var t_b = new TrainBag(0,
-                new BucketFactory(sp),
+                new BucketFactory(new ZipStoreFactory(sp)),
                 ms,
                 new BagSettings { PerBucketMessages = 5000 }))
             {
@@ -129,40 +130,34 @@ namespace MLRoots.Deduplication.Tests
                     var addr = await t_b.Push(new LogEntry { Message = l });
                     clist.Add(new ER(addr, l));
 
-                    //if (!addrHS.Add(addr))
-                    //    throw new InvalidOperationException("HS already contains");
-
                     if ((++index) % 100000 == 0)
-                    {
                         TestContext.Progress.WriteLine($"{index} messages");
-                        //Console.WriteLine($"{addr.Index}");
-                        Console.WriteLine($"{index} messages");
-                    }
                 }
             }
 
             using (var t_b = new TrainBag(0,
-                new BucketFactory(sp),
+                new BucketFactory(new ZipStoreFactory(sp)),
                 ms,
                 new BagSettings { PerBucketMessages = 5000 }))
             {
                 var index = 0;
-                Console.WriteLine("Reading ...");
+
+                TestContext.Progress.WriteLine("Reading ...");
                 foreach (var s in clist)
                 {
                     var entry = await t_b.ReadEntry(s.EntryAddress);
                     if (entry.Message != s.Message)
                         throw new InvalidOperationException("Read write error");
 
-                    if ((index++) % 100000 == 0)
-                        Console.WriteLine($"{index} messages");
+                    if ((++index) % 100000 == 0)
+                        TestContext.Progress.WriteLine($"{index} messages");
                 }
             }
 
             var compressedSize = sp.streams
                 .Select(q => q.Value).Select(q => q.Data.Length).Sum();
             var sourceSize = new FileInfo(fileName).Length;
-            Console.WriteLine($"Compression: {compressedSize} vs {sourceSize} ({(compressedSize * 100) / sourceSize})");
+            TestContext.WriteLine($"Compression: {compressedSize} vs {sourceSize} ({(compressedSize * 100) / sourceSize})");
         }
     }
 }

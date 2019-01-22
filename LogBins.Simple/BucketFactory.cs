@@ -4,18 +4,11 @@ using System.Text;
 using System.Threading.Tasks;
 using LogBins.Base;
 
-namespace LogBins.ZipBuckets
+namespace LogBins.Simple
 {
     public class BucketFactory : IBucketFactory
     {
         private readonly IBucketStoreFactory bucketStoreFactory;
-
-        public BucketFactory(IBucketStreamProvider bucketStreamProvider)
-            : this(new ZipStoreFactory(bucketStreamProvider))
-        {
-
-        }
-
         public BucketFactory(IBucketStoreFactory bucketStoreFactory)
         {
             this.bucketStoreFactory = bucketStoreFactory;
