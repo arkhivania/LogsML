@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace LogBins
 {
-    public class Bag
+    public sealed class Bag : IDisposable
     {
         struct LocalBucket
         {
@@ -51,14 +51,17 @@ namespace LogBins
                 BucketId = address.Index / BagInfo.BagSettings.PerBucketMessages
             });
 
-            return await b.GetEntry(address.Index % BagInfo.BagSettings.PerBucketMessages);
+            return await b
+                .GetEntry(address.Index % BagInfo.BagSettings.PerBucketMessages);
         }
 
         public async Task Init()
         {
             if (currentBucket == null)
             {
-                var b_i = await metaStorage.GetCurrentBucketIndexForBag(this.BagInfo.Address);
+                var b_i = await metaStorage
+                    .GetCurrentBucketIndexForBag(this.BagInfo.Address);
+
                 var b = await bucketsHoldOperator.GetBucket(new BucketAddress
                 {
                     TrainId = trainId,
@@ -119,6 +122,11 @@ namespace LogBins
         public async Task Close()
         {
             await bucketsHoldOperator.Close();
+        }
+
+        public void Dispose()
+        {
+            bucketsHoldOperator.Dispose();
         }
     }
 }

@@ -125,6 +125,7 @@ namespace LogBins.Tests
                 new BagSettings { PerBucketMessages = 5000 }))
             {
                 int index = 0;
+                var pushSW = Stopwatch.StartNew();
                 foreach (var l in LoadLines(fileName))
                 {
                     var addr = await t_b.Push(new LogEntry { Message = l });
@@ -133,6 +134,9 @@ namespace LogBins.Tests
                     if ((++index) % 100000 == 0)
                         TestContext.Progress.WriteLine($"{index} messages");
                 }
+                pushSW.Stop();
+
+                TestContext.WriteLine($"Push time: {pushSW.ElapsedMilliseconds} ms, Speed: {(index * 1000)/(pushSW.ElapsedMilliseconds + 1)} msgs/sec");
             }
 
             using (var t_b = new TrainBag(0,

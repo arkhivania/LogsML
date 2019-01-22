@@ -1,5 +1,4 @@
 ﻿using LogBins.Base;
-using Maybe.SkipList;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,20 +8,12 @@ using System.Threading.Tasks;
 
 namespace LogBins
 {
-    class BucketsHoldOperator
+    class BucketsHoldOperator : IDisposable
     {
         class BucketHolder
         {
             public DateTime LastAccess { get; set; }
             public IBucket Bucket { get; set; }
-        }
-
-        class TimeComparer : IComparer<BucketHolder>
-        {
-            public int Compare(BucketHolder x, BucketHolder y)
-            {
-                return x.LastAccess.CompareTo(y.LastAccess);
-            }
         }
 
         DateTime badTime;
@@ -76,9 +67,14 @@ namespace LogBins
                 await h.Value.Bucket.Close();
 
             holders.Clear();
-            badTimeTimer.Dispose();
         }
 
-        
+        public void Dispose()
+        {
+            foreach (var h in holders)
+                h.Value.Bucket.Close().Wait();
+
+            badTimeTimer.Dispose();
+        }
     }
 }

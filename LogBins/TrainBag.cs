@@ -10,7 +10,7 @@ using LogBins.Processing;
 
 namespace LogBins
 {
-    public class TrainBag : IDisposable
+    public sealed class TrainBag : IDisposable
     {
         public long AllCount { get; private set; } = 0;
         
@@ -26,7 +26,7 @@ namespace LogBins
         //readonly IBagCompare compare = new Processing.LevCompare();
 
         public List<Bag> Bags { get; } = new List<Bag>();
-        public Dictionary<int, Bag> bagIdToBag = new Dictionary<int, Bag>();
+        readonly Dictionary<int, Bag> bagIdToBag = new Dictionary<int, Bag>();
 
         bool initialized = false;
 

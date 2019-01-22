@@ -11,7 +11,6 @@ namespace LogBins.Simple
         readonly List<LogEntry> entries = new List<LogEntry>();
         private readonly IBucketStoreFactory bucketStoreFactory;
         bool isModified = false;
-        bool isClosed = false;
         public BucketAddress Info { get; }
 
         public Task<int> MessagesCount => Task.FromResult(entries.Count);
@@ -64,7 +63,6 @@ namespace LogBins.Simple
                 isModified = false;
             }
 
-            isClosed = true;
             return Task.CompletedTask;
         }
 

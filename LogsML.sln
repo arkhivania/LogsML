@@ -13,6 +13,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LogBins.Simple", "LogBins.S
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LogBins.Tests", "LogBins.Tests\LogBins.Tests.csproj", "{9C8514E1-9F76-4598-973A-F2D0BA440050}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Core", "Core", "{876FA7BA-D19D-498A-89E2-EA413D23130D}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ZIP", "ZIP", "{96FFE415-9035-44EB-80F4-CB1D042271C3}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -42,6 +46,11 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{BE0D2C40-B4F7-40A3-A842-57158C78699D} = {876FA7BA-D19D-498A-89E2-EA413D23130D}
+		{30DEFD66-8593-4A97-8BA2-626D08FC267B} = {96FFE415-9035-44EB-80F4-CB1D042271C3}
+		{4A2E804E-1D48-4E2E-9D1E-80BF8B5DDC74} = {876FA7BA-D19D-498A-89E2-EA413D23130D}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {4D03D192-C614-4D13-8540-24C5779ECAE2}
