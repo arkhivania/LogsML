@@ -4,13 +4,14 @@ using System.Text;
 
 namespace LogBins.Lists
 {
-    class Element<TKey>
+    class Element<TKey, TValue>
         where TKey : IComparable<TKey>
     {
         public bool IsTail { get; set; }
         public TKey Key { get; set; }
+        public TValue Value { get; set; }
 
-        public Element<TKey> NextElement { get; set; }
-        public Element<TKey> NextLevelElement { get; set; }
+        public Element<TKey, TValue> NextElement { get; set; }
+        public Element<TKey, TValue> NextLevelElement { get; set; }
     }
 }
