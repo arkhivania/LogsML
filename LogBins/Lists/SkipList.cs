@@ -61,7 +61,9 @@ namespace LogBins.Lists
 
             while (!curE.IsTail)
             {
-                yield return curE.Value;
+                if(key.CompareTo(curE.Key) < 0)
+                    yield return curE.Value;
+
                 curE = curE.NextElement;
             }
         }
@@ -87,7 +89,7 @@ namespace LogBins.Lists
             curE.NextElement = newElement;
 
             curE = newElement;
-            level = 3;
+            level = numLevels - 1;
             while(level > 0 && random.Next(2) == 1)
             {
                 level--;
