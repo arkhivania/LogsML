@@ -40,7 +40,7 @@ namespace LogBins.Lists
             return key.CompareTo(item.Key) <= 0;
         }
 
-        public IEnumerable<TValue> LargerThan(TKey key)
+        public IEnumerable<TValue> LargerThan(TKey key, bool inclusive)
         {
             var curE = leftTopItem;
 
@@ -61,8 +61,15 @@ namespace LogBins.Lists
 
             while (!curE.IsTail)
             {
-                if(key.CompareTo(curE.Key) < 0)
-                    yield return curE.Value;
+                if (!inclusive)
+                {
+                    if (key.CompareTo(curE.Key) < 0)
+                        yield return curE.Value;
+                }else
+                {
+                    if (key.CompareTo(curE.Key) <= 0)
+                        yield return curE.Value;
+                }
 
                 curE = curE.NextElement;
             }
