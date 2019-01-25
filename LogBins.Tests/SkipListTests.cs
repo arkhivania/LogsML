@@ -13,6 +13,20 @@ namespace LogBins.Tests
     {
         readonly Random random = new Random(0);
 
+        int[] GenerateSeqRandomLengthI(int maxCount, int maxValue)
+        {            
+            return Enumerable.Range(0, random.Next(maxCount))
+                .Select(q => random.Next(maxValue)).ToArray();
+        }
+
+        int[] GenerateSeqI(int count, int maxValue)
+        {
+            return Enumerable.Range(0, count)
+                .Select(q => random.Next(maxValue)).ToArray();
+        }
+
+        
+
         [Test]
         [TestCase(1, 10, true)]
         [TestCase(2, 10, true)]
@@ -27,20 +41,20 @@ namespace LogBins.Tests
         public void IntTests(int maxL, int maxV, bool inclusive)
         {
             var sl = new SkipList<int, int>();
-            var seq = Enumerable.Range(0, random.Next(maxL))
-                .Select(q => random.Next(maxV)).ToArray();
+            
 
             var comp = new Func<int, int, bool>((q1, q2) => q1 > q2);
             if(inclusive)
                 comp = new Func<int, int, bool>((q1, q2) => q1 >= q2);
 
+            var seq = GenerateSeqRandomLengthI(maxL, maxV);
             foreach (var s in seq)
                 sl.Add(s, s);
 
             var thresh = (int)((random.NextDouble() - 0.5) * seq.Length * 3.0);
 
             var count_in_seq = seq.Where(q => comp(q, thresh)).Count();
-            var count_in_skip_l = sl.LargerThan(thresh, inclusive).ToArray();
+            var count_in_skip_l = sl.Larger(thresh, inclusive).ToArray();
 
             Assert.That(count_in_skip_l.All(w => comp(w, thresh)));
             Assert.AreEqual(count_in_seq, count_in_skip_l.Length);
@@ -55,9 +69,7 @@ namespace LogBins.Tests
         public void LargerTests(int count)
         {
             var sl = new SkipList<double, double>();
-            var sourceSeq = Enumerable.Range(0, count)
-                .Select(q => random.Next(count))
-                .ToArray();
+            var sourceSeq = GenerateSeqI(count, count);                
 
             foreach (var s in sourceSeq)
                 sl.Add(s, s);
@@ -67,7 +79,7 @@ namespace LogBins.Tests
                 var thresh = (random.NextDouble() - 0.5) * count * 3.0;
 
                 var count_in_seq = sourceSeq.Where(q => q > thresh).Count();
-                var count_in_skip_l = sl.LargerThan(thresh, false).ToArray();
+                var count_in_skip_l = sl.Larger(thresh, false).ToArray();
 
                 Assert.That(count_in_skip_l.All(w => w > thresh));
                 Assert.AreEqual(count_in_seq, count_in_skip_l.Length);
@@ -87,11 +99,11 @@ namespace LogBins.Tests
             foreach (var s in sourceSeq)
                 sl.Add(s, s);
 
-            var larger = sl.LargerThan(100, false).ToArray();
+            var larger = sl.Larger(100, false).ToArray();
             Assert.That(larger.All(q => q > 100));
             Assert.AreEqual(3, larger.Length);
 
-            var m200 = sl.LargerThan(-200, false).ToArray();
+            var m200 = sl.Larger(-200, false).ToArray();
             Assert.AreEqual(sourceSeq.Length, m200.Length);
         }
     }
