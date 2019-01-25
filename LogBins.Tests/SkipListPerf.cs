@@ -27,10 +27,10 @@ namespace LogBins.Tests
         public void KeyValues(int length)
         {
             var seq = GenerateSeqI(length, length);
-            var sl = new SkipList<int, int>();
+            var sl = new SkipList<int, int>((a,b) => Math.Abs(a - b));
 
             foreach (var s in seq)
-                sl.AddBD(s, s, (a,b) => Math.Abs((float)(a - b)));
+                sl.Add(s, s);
 
             var kv_seq = sl.KeyValues().ToArray();
             var r_seq = sl.KeyValuesReversed().ToArray();
@@ -47,7 +47,7 @@ namespace LogBins.Tests
         [TestCase(542345)]
         public void InsertionSpeedNearSorted(int length)
         {
-            var sl = new SkipList<int, int>();
+            var sl = new SkipList<int, int>((a, b) => Math.Abs(a - b));
 
             var r = new Random();
             for (int i = 0; i < length; ++i)

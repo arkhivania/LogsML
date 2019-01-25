@@ -41,8 +41,7 @@ namespace LogBins.Tests
         [Repeat(10)]
         public void IntTests(int maxL, int maxV, bool inclusive)
         {
-            var sl = new SkipList<int, int>();
-            
+            var sl = new SkipList<int, int>((a, b) => Math.Abs(a - b));            
 
             var comp = new Func<int, int, bool>((q1, q2) => q1 > q2);
             if(inclusive)
@@ -69,7 +68,7 @@ namespace LogBins.Tests
         [TestCase(8000)]
         public void LargerTests(int count)
         {
-            var sl = new SkipList<double, double>();
+            var sl = new SkipList<double, double>((a, b) => (float)Math.Abs(a - b));
             var sourceSeq = GenerateSeqI(count, count);                
 
             foreach (var s in sourceSeq)
@@ -90,7 +89,7 @@ namespace LogBins.Tests
         [Test]
         public void CheckTheSame()
         {
-            var sl = new SkipList<int, int>();
+            var sl = new SkipList<int, int>((a, b) => Math.Abs(a - b));
 
             var sourceSeq = new[]
             {

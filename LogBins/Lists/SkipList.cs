@@ -12,12 +12,14 @@ namespace LogBins.Lists
         readonly Element<TKey, TValue> rightTopItem;
 
         private readonly int numLevels;
-
+        private readonly Func<TKey, TKey, float> distanceFunc;
         readonly Random random = new Random(0);
 
-        public SkipList(int numLevels = 4)
+        public SkipList(Func<TKey, TKey, float> distanceFunc, 
+            int numLevels = 4)
         {
             this.numLevels = numLevels;
+            this.distanceFunc = distanceFunc;
             if (numLevels <= 1)
                 throw new ArgumentException("numLevels <= 1");
 
@@ -52,18 +54,11 @@ namespace LogBins.Lists
         /// <returns></returns>
         IEnumerable<Element<TKey, TValue>> Right(TKey key)
         {
-            var curE = leftTopItem;
-
-            int level = 0;
-            for (; level < numLevels; ++level)
-            {
-                while (curE.NextElement.ElementType != ElementType.Tail
-                    && key.CompareTo(curE.NextElement.Key) > 0)
-                    curE = curE.NextElement;
-
-                if (level != numLevels - 1)
-                    curE = curE.NextLevelElement;
-            }
+            Element<TKey, TValue> curE;
+            if (LeftIsNear(key))
+                curE = SearchForAddLeft(key).Item1;
+            else
+                curE = SearchForAddRight(key).Item1;                
 
             if (curE.ElementType == ElementType.Tail)
                 yield break;
@@ -89,6 +84,11 @@ namespace LogBins.Lists
                     yield return r.Value;
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="key"></param>
+        /// <returns>всегда возвращает такой элемент, Next элемент которого больше, чем key</returns>
         (Element<TKey, TValue>, Element<TKey, TValue>[]) SearchForAddLeft(TKey key)
         {
             var levels = new Element<TKey, TValue>[numLevels];
@@ -109,6 +109,11 @@ namespace LogBins.Lists
             return (curE, levels);
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="key"></param>
+        /// <returns>всегда возвращает такой элемент, Next элемент которого больше, чем key</returns>
         (Element<TKey, TValue>, Element<TKey, TValue>[]) SearchForAddRight(TKey key)
         {
             var levels = new Element<TKey, TValue>[numLevels];
@@ -161,12 +166,20 @@ namespace LogBins.Lists
             }
         }
 
-        public void AddBD(TKey key, TValue value, Func<TKey, TKey, float> distance)
+        bool LeftIsNear(TKey key)
         {
-            var left_seq = KeyValues().Take(1).ToArray();
-            var right_seq = KeyValuesReversed().Take(1).ToArray();
+            if (KeyValues().Any() == false)
+                return true;
 
-            if(left_seq.Length == 0 || distance(key, left_seq[0].Key) < distance(key, right_seq[0].Key))
+            var left = KeyValues().First().Key;
+            var right = KeyValuesReversed().First().Key;
+
+            return distanceFunc(key, left) < distanceFunc(key, right);
+        }
+
+        public void Add(TKey key, TValue value)
+        {
+            if(LeftIsNear(key))
                 Add(key, value, SearchForAddLeft);
             else
                 Add(key, value, SearchForAddRight);
