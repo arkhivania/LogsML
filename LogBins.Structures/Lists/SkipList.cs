@@ -8,15 +8,15 @@ namespace LogBins.Structures.Lists
     public class SkipList<TKey, TValue>
         where TKey : IComparable<TKey>
     {
-        readonly Element<TKey, TValue> leftTopItem;
+        readonly internal Element<TKey, TValue> leftTopItem;
         readonly Element<TKey, TValue> rightTopItem;
 
-        private readonly int numLevels;
+        internal readonly int numLevels;
         private readonly Func<TKey, TKey, float> distanceFunc;
         readonly Random random = new Random(0);
 
         public SkipList(Func<TKey, TKey, float> distanceFunc, 
-            int numLevels = 4)
+            int numLevels = 5)
         {
             this.numLevels = numLevels;
             this.distanceFunc = distanceFunc;
