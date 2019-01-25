@@ -1,6 +1,7 @@
 ﻿using LogBins;
 using LogBins.Base;
 using LogBins.Simple;
+using LogBins.Tests.Tools;
 using LogBins.ZipBuckets;
 using NUnit.Framework;
 using System;
@@ -15,97 +16,8 @@ using System.Threading.Tasks;
 namespace LogBins.Tests
 {
     [TestFixture]
-    class Chk
+    partial class Chk
     {
-        IEnumerable<string> LoadLines(string fileName)
-        {
-            using (var ar = ZipFile.OpenRead(fileName))
-                foreach (var e in ar.Entries
-                    .Where(q => q.Length > 0))
-                {
-                    using (var stream = e.Open())
-                    using (var sr = new StreamReader(stream))
-                        while (!sr.EndOfStream)
-                        {
-                            var log_line = sr.ReadLine();
-                            if (!string.IsNullOrEmpty(log_line))
-                                yield return log_line;
-                        }
-                }
-        }
-
-        class SP : IBucketStreamProvider
-        {
-            internal class NCS : MemoryStream
-            {
-                public byte[] Data { get; private set; }
-
-                public override void Close()
-                {
-                    this.Data = ToArray();
-                    base.Close();
-                }
-            }
-
-            readonly internal Dictionary<BucketAddress, NCS> streams
-                = new Dictionary<BucketAddress, NCS>();
-
-            public Stream OpenRead(BucketAddress bucketAddress)
-            {
-                if (streams.TryGetValue(bucketAddress, out NCS stream))
-                    return new MemoryStream(stream.Data);
-
-                return streams[bucketAddress] = new NCS();
-            }
-
-            public Stream OpenWrite(BucketAddress bucketAddress)
-            {
-                return streams[bucketAddress] = new NCS();
-            }
-        }
-
-        class MS : IMetaStorage
-        {
-            readonly List<BagInfo> bagInfos = new List<BagInfo>();
-            readonly Dictionary<BagAddress, int> bagBuckets = new Dictionary<BagAddress, int>();
-
-            public Task<int> GetCurrentBucketIndexForBag(BagAddress bagAddress)
-            {
-                if (bagBuckets.TryGetValue(bagAddress, out int bv))
-                    return Task.FromResult(bv);
-
-                return Task.FromResult(0);
-            }
-
-            public Task StoreCurrentBucketIndexForBag(BagAddress bagAddress, int id)
-            {
-                bagBuckets[bagAddress] = id;
-                return Task.CompletedTask;
-            }
-
-            public Task<BagInfo[]> LoadBags(ushort trainId)
-            {
-                return Task.FromResult(bagInfos.ToArray());
-            }
-
-            public Task RegisterNewBag(ushort trainId, BagInfo bagInfo)
-            {
-                bagInfos.Add(bagInfo);
-                return Task.CompletedTask;
-            }
-        }
-
-        class ER
-        {
-            public ER(ulong entryAddress, string message)
-            {
-                EntryAddress = entryAddress;
-                Message = message;
-            }
-
-            public ulong EntryAddress { get; }
-            public string Message { get; }
-        }
 
         [Test]
         [TestCase(@"..\..\..\..\TestsData\lgs\syslog_short.zip")]
@@ -119,14 +31,14 @@ namespace LogBins.Tests
 
             var clist = new List<ER>();
 
-            using (var t_b = new TrainBag(0,
+            using (var t_b = new TrainBag(1,
                 new BucketFactory(new ZipStoreFactory(sp)),
                 ms,
                 new BagSettings { PerBucketMessages = 5000 }))
             {
                 int index = 0;
                 var pushSW = Stopwatch.StartNew();
-                foreach (var l in LoadLines(fileName))
+                foreach (var l in ZipLogs.LoadLines(fileName))
                 {
                     var addr = await t_b.Push(new LogEntry { Message = l });
                     clist.Add(new ER(addr, l));
@@ -139,7 +51,7 @@ namespace LogBins.Tests
                 TestContext.WriteLine($"Push time: {pushSW.ElapsedMilliseconds} ms, Speed: {(index * 1000)/(pushSW.ElapsedMilliseconds + 1)} msgs/sec");
             }
 
-            using (var t_b = new TrainBag(0,
+            using (var t_b = new TrainBag(1,
                 new BucketFactory(new ZipStoreFactory(sp)),
                 ms,
                 new BagSettings { PerBucketMessages = 5000 }))
