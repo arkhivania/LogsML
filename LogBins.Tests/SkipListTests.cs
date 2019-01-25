@@ -9,6 +9,7 @@ namespace LogBins.Tests
 {
     [TestFixture]
     [Parallelizable]
+    [Category("PERF")]
     class SkipListTests
     {
         readonly Random random = new Random(0);

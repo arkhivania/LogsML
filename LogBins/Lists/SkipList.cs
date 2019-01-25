@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace LogBins.Lists
@@ -29,6 +30,7 @@ namespace LogBins.Lists
 
                 tails[i] = tail;
                 heads[i] = new Element<TKey, TValue>() { NextElement = tail, ElementType = ElementType.Head };
+                tail.PrevElement = heads[i];
             }
 
             for (int i = 0; i < numLevels - 1; ++i)
@@ -87,43 +89,87 @@ namespace LogBins.Lists
                     yield return r.Value;
         }
 
-        public void Add(TKey key, TValue value)
+        (Element<TKey, TValue>, Element<TKey, TValue>[]) SearchForAddLeft(TKey key)
         {
-            var newElement = new Element<TKey, TValue>() { Key = key, Value = value };
             var levels = new Element<TKey, TValue>[numLevels];
             var curE = leftTopItem;
 
             int level = 0;
             for (; level < numLevels; ++level)
             {
-                while (curE.NextElement.ElementType != ElementType.Tail 
+                while (curE.NextElement.ElementType != ElementType.Tail
                     && key.CompareTo(curE.NextElement.Key) > 0)
                     curE = curE.NextElement;
 
                 levels[level] = curE;
-                if(level != numLevels - 1)
+                if (level != numLevels - 1)
                     curE = curE.NextLevelElement;
             }
 
+            return (curE, levels);
+        }
+
+        (Element<TKey, TValue>, Element<TKey, TValue>[]) SearchForAddRight(TKey key)
+        {
+            var levels = new Element<TKey, TValue>[numLevels];
+            var curE = rightTopItem;
+
+            int level = 0;
+            for (; level < numLevels; ++level)
+            {
+                while (curE.PrevElement.ElementType != ElementType.Head
+                    && key.CompareTo(curE.PrevElement.Key) <= 0)
+                    curE = curE.PrevElement;
+
+                levels[level] = curE.PrevElement;
+                if (level != numLevels - 1)
+                    curE = curE.NextLevelElement;
+            }
+
+            return (curE.PrevElement, levels);
+        }
+
+        void Add(TKey key, TValue value, Func<TKey, (Element<TKey, TValue>, Element<TKey, TValue>[])> searchFunc)
+        {
+            var (curE, levels) = searchFunc(key);
+
+            var newElement = new Element<TKey, TValue>() { Key = key, Value = value };
+
+            newElement.PrevElement = curE;
             newElement.NextElement = curE.NextElement;
+            curE.NextElement.PrevElement = newElement;
             curE.NextElement = newElement;
 
             curE = newElement;
-            level = numLevels - 1;
-            while(level > 0 && random.Next(2) == 1)
+            var level = numLevels - 1;
+            while (level > 0 && random.Next(2) == 1)
             {
                 level--;
+
                 var lel = new Element<TKey, TValue>()
                 {
                     Key = key,
                     Value = value,
                     NextLevelElement = curE,
-                    NextElement = levels[level].NextElement
+                    NextElement = levels[level].NextElement,
+                    PrevElement = levels[level]
                 };
 
-                levels[level].NextElement = lel;                
+                levels[level].NextElement.PrevElement = lel;
+                levels[level].NextElement = lel;
                 curE = lel;
             }
+        }
+
+        public void AddBD(TKey key, TValue value, Func<TKey, TKey, float> distance)
+        {
+            var left_seq = KeyValues().Take(1).ToArray();
+            var right_seq = KeyValuesReversed().Take(1).ToArray();
+
+            if(left_seq.Length == 0 || distance(key, left_seq[0].Key) < distance(key, right_seq[0].Key))
+                Add(key, value, SearchForAddLeft);
+            else
+                Add(key, value, SearchForAddRight);
         }
 
         public IEnumerable<KeyValuePair<TKey, TValue>> KeyValues()
@@ -138,7 +184,20 @@ namespace LogBins.Lists
                 yield return new KeyValuePair<TKey, TValue>(e.Key, e.Value);
                 e = e.NextElement;
             }
+        }
 
+        public IEnumerable<KeyValuePair<TKey, TValue>> KeyValuesReversed()
+        {
+            var e = rightTopItem;
+            for (int i = 0; i < numLevels - 1; ++i)
+                e = e.NextLevelElement;
+
+            e = e.PrevElement;
+            while (e.ElementType != ElementType.Head)
+            {
+                yield return new KeyValuePair<TKey, TValue>(e.Key, e.Value);
+                e = e.PrevElement;
+            }
         }
     }
 }

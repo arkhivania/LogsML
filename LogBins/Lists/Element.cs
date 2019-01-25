@@ -10,6 +10,7 @@ namespace LogBins.Lists
         public TKey Key { get; set; }
         public TValue Value { get; set; }
 
+        public Element<TKey, TValue> PrevElement { get; set; }
         public Element<TKey, TValue> NextElement { get; set; }
         public Element<TKey, TValue> NextLevelElement { get; set; }
 
