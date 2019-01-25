@@ -1,4 +1,4 @@
-﻿using LogBins.Lists;
+﻿using LogBins.Structures.Lists;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;

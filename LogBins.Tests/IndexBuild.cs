@@ -1,12 +1,13 @@
 ﻿using LogBins.Base;
-using LogBins.Lists;
 using LogBins.Simple;
+using LogBins.Structures.Lists;
 using LogBins.Tests.Tools;
 using LogBins.ZipBuckets;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -26,7 +27,8 @@ namespace LogBins.Tests
 
             var clist = new List<ER>();
 
-            var dateTime = DateTime.Now;
+            var startDateTime = DateTime.Now;
+            var dateTime = startDateTime;
 
             var dateIndex = new SkipList<DateTime, ulong>((a, b) => (float)System.Math.Abs(a.Subtract(b).TotalSeconds));
 
@@ -49,6 +51,17 @@ namespace LogBins.Tests
                         TestContext.Progress.WriteLine($"{index} messages");
                 }
                 pushSW.Stop();
+
+                var kv_s = dateIndex
+                    .Larger(startDateTime + TimeSpan.FromSeconds((dateTime - startDateTime).TotalSeconds/2), false)
+                    .Take(10).ToArray();
+
+                foreach (var v in kv_s.Select(q => q.Value))
+                {
+                    var mess = await t_b.ReadEntry(v);
+                    var mt = mess.Message;
+                }
+                    
 
                 TestContext.WriteLine($"Push time: {pushSW.ElapsedMilliseconds} ms, Speed: {(index * 1000) / (pushSW.ElapsedMilliseconds + 1)} msgs/sec");
             }

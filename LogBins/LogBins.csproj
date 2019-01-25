@@ -16,5 +16,9 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
   </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\LogBins.Structures\LogBins.Structures.csproj" />
+  </ItemGroup>
   
 </Project>

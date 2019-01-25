@@ -1,4 +1,4 @@
-﻿using LogBins.Lists;
+﻿using LogBins.Structures.Lists;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
@@ -55,7 +55,7 @@ namespace LogBins.Tests
             var count_in_seq = seq.Where(q => q.CompareTo(thresh) > comp_thr).Count();
             var count_in_skip_l = sl.Larger(thresh, inclusive).ToArray();
 
-            Assert.That(count_in_skip_l.All(w => w.CompareTo(thresh) > comp_thr));
+            Assert.That(count_in_skip_l.All(w => w.Key.CompareTo(thresh) > comp_thr));
             Assert.AreEqual(count_in_seq, count_in_skip_l.Length);
         }
 
@@ -86,7 +86,7 @@ namespace LogBins.Tests
             var count_in_seq = seq.Where(q => q.CompareTo(thresh) < comp_thr).Count();
             var count_in_skip_l = sl.Smaller(thresh, inclusive).ToArray();
 
-            Assert.That(count_in_skip_l.All(w => w.CompareTo(thresh) < comp_thr));
+            Assert.That(count_in_skip_l.All(w => w.Key.CompareTo(thresh) < comp_thr));
             Assert.AreEqual(count_in_seq, count_in_skip_l.Length);
         }
 
@@ -111,7 +111,7 @@ namespace LogBins.Tests
                 var count_in_seq = sourceSeq.Where(q => q > thresh).Count();
                 var count_in_skip_l = sl.Larger(thresh, false).ToArray();
 
-                Assert.That(count_in_skip_l.All(w => w > thresh));
+                Assert.That(count_in_skip_l.All(w => w.Key > thresh));
                 Assert.AreEqual(count_in_seq, count_in_skip_l.Length);
             }
         }
@@ -130,7 +130,7 @@ namespace LogBins.Tests
                 sl.Add(s, s);
 
             var larger = sl.Larger(100, false).ToArray();
-            Assert.That(larger.All(q => q > 100));
+            Assert.That(larger.All(q => q.Key > 100));
             Assert.AreEqual(3, larger.Length);
 
             var m200 = sl.Larger(-200, false).ToArray();
@@ -138,7 +138,7 @@ namespace LogBins.Tests
 
 
             var smaller = sl.Smaller(100, false).ToArray();
-            Assert.That(smaller.All(q => q < 100));
+            Assert.That(smaller.All(q => q.Key < 100));
             Assert.AreEqual(6, smaller.Length);
 
             var l200 = sl.Smaller(1200, false).ToArray();

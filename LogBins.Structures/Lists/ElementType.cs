@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace LogBins.Lists
+namespace LogBins.Structures.Lists
 {
     public enum ElementType
     {

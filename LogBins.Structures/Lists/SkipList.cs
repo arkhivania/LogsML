@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace LogBins.Lists
+namespace LogBins.Structures.Lists
 {
     public class SkipList<TKey, TValue>
         where TKey : IComparable<TKey>
@@ -94,7 +94,7 @@ namespace LogBins.Lists
             }
         }
 
-        public IEnumerable<TValue> Smaller(TKey key, bool inclusive)
+        public IEnumerable<KeyValuePair<TKey, TValue>> Smaller(TKey key, bool inclusive)
         {
             var c = 0;
             if (inclusive)
@@ -102,10 +102,10 @@ namespace LogBins.Lists
 
             foreach (var r in Left(key))
                 if (r.Key.CompareTo(key) < c)
-                    yield return r.Value;
+                    yield return new KeyValuePair<TKey, TValue>(r.Key, r.Value);
         }
 
-        public IEnumerable<TValue> Larger(TKey key, bool inclusive)
+        public IEnumerable<KeyValuePair<TKey, TValue>> Larger(TKey key, bool inclusive)
         {
             var c = 0;
             if (inclusive)
@@ -113,7 +113,7 @@ namespace LogBins.Lists
 
             foreach (var r in Right(key))
                 if (r.Key.CompareTo(key) > c)
-                    yield return r.Value;
+                    yield return new KeyValuePair<TKey, TValue>(r.Key, r.Value);
         }
 
         /// <summary>
