@@ -24,7 +24,6 @@ namespace LogBins.Tests
         [TestCase(1090)]
         [TestCase(4190)]
         [TestCase(84190)]
-        //[TestCase(142345)]
         public void KeyValues(int length)
         {
             var seq = GenerateSeqI(length, length);
@@ -32,6 +31,30 @@ namespace LogBins.Tests
 
             foreach (var s in seq)
                 sl.AddBD(s, s, (a,b) => Math.Abs((float)(a - b)));
+
+            var kv_seq = sl.KeyValues().ToArray();
+            var r_seq = sl.KeyValuesReversed().ToArray();
+
+            Assert.That(kv_seq.Reverse().SequenceEqual(r_seq));
+        }
+
+        [Test]
+        [TestCase(100)]
+        [TestCase(1090)]
+        [TestCase(4190)]
+        [TestCase(84190)]
+        [TestCase(142345)]
+        [TestCase(542345)]
+        public void InsertionSpeedNearSorted(int length)
+        {
+            var sl = new SkipList<int, int>();
+
+            var r = new Random();
+            for (int i = 0; i < length; ++i)
+            {
+                var sk = random.Next(50);
+                sl.Add(i - sk, i);
+            }
 
             var kv_seq = sl.KeyValues().ToArray();
             var r_seq = sl.KeyValuesReversed().ToArray();
