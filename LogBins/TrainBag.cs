@@ -12,6 +12,8 @@ namespace LogBins
 {
     public sealed class TrainBag : IDisposable
     {
+        const int MAX_BAGS_INDEX = 65535;
+
         public long AllCount { get; private set; } = 0;
         
         private readonly IBucketFactory bucketFactory;
@@ -67,9 +69,9 @@ namespace LogBins
             }
         }
 
-        public async Task<LogEntry> ReadEntry(EntryAddress address)
+        public async Task<LogEntry> ReadEntry(ulong address)
         {
-            if (address.TrainId != TrainId)
+            if (address.TrainId() != TrainId)
                 throw new InvalidOperationException("Wrong train ID");
 
             if (!initialized)
@@ -78,7 +80,7 @@ namespace LogBins
             await semaphore.WaitAsync();
             try
             {
-                var bag = bagIdToBag[address.BagId];
+                var bag = bagIdToBag[address.BagId()];
                 var entry = await bag.ReadEntry(address);
                 return entry;
             }
@@ -88,7 +90,7 @@ namespace LogBins
             }
         }
 
-        public async Task<EntryAddress> Push(Base.LogEntry logEntry)
+        public async Task<ulong> Push(Base.LogEntry logEntry)
         {
             if (!initialized)
                 await Initialize();
@@ -107,6 +109,9 @@ namespace LogBins
                         finded = oiIndex;
                         break;
                     }
+
+                if (finded == -1 && Bags.Count == MAX_BAGS_INDEX + 1)
+                    finded = Bags.Count - 1;
 
                 if (finded >= 0)
                 {
@@ -128,7 +133,7 @@ namespace LogBins
                     Address = new BagAddress
                     {
                         TrainId = TrainId,
-                        BagId = Bags.Count
+                        BagId = (ushort)Bags.Count
                     },
                     BaseMessage = logEntry.Message,
                     BagSettings = new BagSettings { PerBucketMessages = 5000 }

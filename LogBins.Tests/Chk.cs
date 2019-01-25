@@ -97,13 +97,13 @@ namespace LogBins.Tests
 
         class ER
         {
-            public ER(EntryAddress entryAddress, string message)
+            public ER(ulong entryAddress, string message)
             {
                 EntryAddress = entryAddress;
                 Message = message;
             }
 
-            public EntryAddress EntryAddress { get; }
+            public ulong EntryAddress { get; }
             public string Message { get; }
         }
 

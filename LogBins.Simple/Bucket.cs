@@ -35,12 +35,7 @@ namespace LogBins.Simple
         {
             isModified = true;
             entries.Add(logEntry);
-            var id = new EntryAddress
-            {
-                TrainId = Info.TrainId,
-                BagId = Info.BagId,
-                Index = (ushort)(entries.Count - 1)
-            };
+            var id = AddressTools.MakeAddress(Info.TrainId, Info.BagId, entries.Count - 1);            
 
             var res = new AddEntryResult
             {

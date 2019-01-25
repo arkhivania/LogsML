@@ -7,7 +7,7 @@ namespace LogBins.Index
 {
     public struct IndexEntry
     {
-        public DateTime EntryDateTime { get; set; }
-        public EntryAddress Address { get; set; }
+        public ulong Address { get; set; }
+        public DateTime EntryDateTime { get; set; }        
     }
 }

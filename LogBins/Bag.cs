@@ -42,17 +42,17 @@ namespace LogBins
             this.bucketsHoldOperator = new BucketsHoldOperator(bucketFactory);
         }
 
-        public async Task<LogEntry> ReadEntry(EntryAddress address)
+        public async Task<LogEntry> ReadEntry(ulong address)
         {
             var b = await bucketsHoldOperator.GetBucket(new BucketAddress
             {
-                TrainId = address.TrainId,
-                BagId = address.BagId,
-                BucketId = address.Index / BagInfo.BagSettings.PerBucketMessages
+                TrainId = address.TrainId(),
+                BagId = address.BagId(),
+                BucketId = address.Index() / BagInfo.BagSettings.PerBucketMessages
             });
 
             return await b
-                .GetEntry(address.Index % BagInfo.BagSettings.PerBucketMessages);
+                .GetEntry(address.Index() % BagInfo.BagSettings.PerBucketMessages);
         }
 
         public async Task Init()
@@ -78,7 +78,7 @@ namespace LogBins
             }
         }
 
-        public async Task<EntryAddress> AddMessage(Base.LogEntry message)
+        public async Task<ulong> AddMessage(Base.LogEntry message)
         {
             if (currentBucket == null)
                 await Init();            
@@ -111,12 +111,9 @@ namespace LogBins
                 Bucket = currentBucket.Value.Bucket,
                 MessagesCount = entry.MessagesInBucket
             };
-            return new EntryAddress
-            {
-                BagId = BagInfo.Address.BagId,
-                TrainId = BagInfo.Address.TrainId,
-                Index = (currentBucket.Value.Bucket.Info.BucketId * BagInfo.BagSettings.PerBucketMessages) + entry.Index
-            };
+
+            var index = (currentBucket.Value.Bucket.Info.BucketId * BagInfo.BagSettings.PerBucketMessages) + entry.Index;
+            return AddressTools.MakeAddress(BagInfo.Address.TrainId, BagInfo.Address.BagId, index);            
         }
 
         public async Task Close()
