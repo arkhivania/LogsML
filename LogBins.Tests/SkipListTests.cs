@@ -33,19 +33,18 @@ namespace LogBins.Tests
         [TestCase(2, 10, true)]
         [TestCase(100, 10, true)]
         [TestCase(10000, 100, true)]
-
         [TestCase(1, 10, false)]
         [TestCase(2, 10, false)]
         [TestCase(100, 10, false)]
         [TestCase(10000, 100, false)]        
         [Repeat(10)]
-        public void IntTests(int maxL, int maxV, bool inclusive)
+        public void IntTestsLarger(int maxL, int maxV, bool inclusive)
         {
             var sl = new SkipList<int, int>((a, b) => Math.Abs(a - b));            
 
-            var comp = new Func<int, int, bool>((q1, q2) => q1 > q2);
+            var comp_thr = 0;
             if(inclusive)
-                comp = new Func<int, int, bool>((q1, q2) => q1 >= q2);
+                comp_thr = -1;
 
             var seq = GenerateSeqRandomLengthI(maxL, maxV);
             foreach (var s in seq)
@@ -53,10 +52,41 @@ namespace LogBins.Tests
 
             var thresh = (int)((random.NextDouble() - 0.5) * seq.Length * 3.0);
 
-            var count_in_seq = seq.Where(q => comp(q, thresh)).Count();
+            var count_in_seq = seq.Where(q => q.CompareTo(thresh) > comp_thr).Count();
             var count_in_skip_l = sl.Larger(thresh, inclusive).ToArray();
 
-            Assert.That(count_in_skip_l.All(w => comp(w, thresh)));
+            Assert.That(count_in_skip_l.All(w => w.CompareTo(thresh) > comp_thr));
+            Assert.AreEqual(count_in_seq, count_in_skip_l.Length);
+        }
+
+        [Test]
+        [TestCase(1, 10, true)]
+        [TestCase(2, 10, true)]
+        [TestCase(100, 10, true)]
+        [TestCase(10000, 100, true)]
+        [TestCase(1, 10, false)]
+        [TestCase(2, 10, false)]
+        [TestCase(100, 10, false)]
+        [TestCase(10000, 100, false)]
+        [Repeat(10)]
+        public void IntTestsSmaller(int maxL, int maxV, bool inclusive)
+        {
+            var sl = new SkipList<int, int>((a, b) => Math.Abs(a - b));
+
+            var comp_thr = 0;
+            if (inclusive)
+                comp_thr = 1;
+
+            var seq = GenerateSeqRandomLengthI(maxL, maxV);
+            foreach (var s in seq)
+                sl.Add(s, s);
+
+            var thresh = (int)((random.NextDouble() - 0.5) * seq.Length * 3.0);
+
+            var count_in_seq = seq.Where(q => q.CompareTo(thresh) < comp_thr).Count();
+            var count_in_skip_l = sl.Smaller(thresh, inclusive).ToArray();
+
+            Assert.That(count_in_skip_l.All(w => w.CompareTo(thresh) < comp_thr));
             Assert.AreEqual(count_in_seq, count_in_skip_l.Length);
         }
 
@@ -105,6 +135,14 @@ namespace LogBins.Tests
 
             var m200 = sl.Larger(-200, false).ToArray();
             Assert.AreEqual(sourceSeq.Length, m200.Length);
+
+
+            var smaller = sl.Smaller(100, false).ToArray();
+            Assert.That(smaller.All(q => q < 100));
+            Assert.AreEqual(6, smaller.Length);
+
+            var l200 = sl.Smaller(1200, false).ToArray();
+            Assert.AreEqual(sourceSeq.Length, l200.Length);
         }
     }
 }

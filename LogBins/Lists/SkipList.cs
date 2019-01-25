@@ -45,6 +45,30 @@ namespace LogBins.Lists
             rightTopItem = tails[0];
         }
 
+        /// <summary>
+        /// метод возвращает последовательность элементов, которая заведомо включает в себя ключи меньше key
+        /// однако в этой последовательности могут быть и элементы с большими Key
+        /// </summary>
+        /// <param name="key"></param>
+        /// <returns></returns>
+        IEnumerable<Element<TKey, TValue>> Left(TKey key)
+        {
+            Element<TKey, TValue> curE;
+            if (LeftIsNear(key))
+                curE = SearchForAddLeft(key).Item1;
+            else
+                curE = SearchForAddRight(key).Item1;
+
+            while (curE.NextElement.ElementType == ElementType.Common
+                && curE.NextElement.Key.CompareTo(key) == 0)                
+                curE = curE.NextElement;
+
+            while (curE.ElementType != ElementType.Head)
+            {
+                yield return curE;
+                curE = curE.PrevElement;
+            }
+        }
 
         /// <summary>
         /// метод возвращает последовательность элементов, которая заведомо включает в себя ключи большие key
@@ -60,9 +84,6 @@ namespace LogBins.Lists
             else
                 curE = SearchForAddRight(key).Item1;                
 
-            if (curE.ElementType == ElementType.Tail)
-                yield break;
-
             if (curE.ElementType == ElementType.Head)
                 curE = curE.NextElement;
 
@@ -71,6 +92,17 @@ namespace LogBins.Lists
                 yield return curE;
                 curE = curE.NextElement;
             }
+        }
+
+        public IEnumerable<TValue> Smaller(TKey key, bool inclusive)
+        {
+            var c = 0;
+            if (inclusive)
+                c = 1;
+
+            foreach (var r in Left(key))
+                if (r.Key.CompareTo(key) < c)
+                    yield return r.Value;
         }
 
         public IEnumerable<TValue> Larger(TKey key, bool inclusive)
