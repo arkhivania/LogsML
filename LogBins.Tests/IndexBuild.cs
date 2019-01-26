@@ -38,19 +38,25 @@ namespace LogBins.Tests
                 new BagSettings { PerBucketMessages = 5000 }))
             {
                 int index = 0;
-                var pushSW = Stopwatch.StartNew();
-                foreach (var l in ZipLogs.LoadLines(fileName))
+
+                for (int k = 0; k < 10; ++k)
                 {
-                    var addr = await t_b.Push(new LogEntry { Message = l });
-                    clist.Add(new ER(addr, l));
+                    var pushSW = Stopwatch.StartNew();
 
-                    dateIndex.Add(dateTime, addr);
-                    dateTime += TimeSpan.FromSeconds((random.NextDouble() - 0.2) * 20.0);
+                    foreach (var l in ZipLogs.LoadLines(fileName))
+                    {
+                        var addr = await t_b.Push(new LogEntry { Message = l });
+                        clist.Add(new ER(addr, l));
 
-                    if ((++index) % 100000 == 0)
-                        TestContext.Progress.WriteLine($"{index} messages");
+                        dateIndex.Add(dateTime, addr);
+                        dateTime += TimeSpan.FromSeconds((random.NextDouble() - 0.2) * 20.0);
+
+                        if ((++index) % 100000 == 0)
+                            TestContext.Progress.WriteLine($"{index} messages");
+                    }
+                    pushSW.Stop();
+                    TestContext.Progress.WriteLine($"Iteration: {k}, time = {pushSW.ElapsedMilliseconds} ms");
                 }
-                pushSW.Stop();
 
                 var kv_s = dateIndex
                     .Larger(startDateTime + TimeSpan.FromSeconds((dateTime - startDateTime).TotalSeconds/2), false)
@@ -63,7 +69,7 @@ namespace LogBins.Tests
                 }
                     
 
-                TestContext.WriteLine($"Push time: {pushSW.ElapsedMilliseconds} ms, Speed: {(index * 1000) / (pushSW.ElapsedMilliseconds + 1)} msgs/sec");
+                //TestContext.WriteLine($"Push time: {pushSW.ElapsedMilliseconds} ms, Speed: {(index * 1000) / (pushSW.ElapsedMilliseconds + 1)} msgs/sec");
             }
         }
     }
