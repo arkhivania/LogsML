@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace LogBins
 {
-    public sealed class Bag : IDisposable
+    public sealed class Bag
     {
         struct LocalBucket
         {
@@ -19,9 +19,10 @@ namespace LogBins
 
         private readonly ushort trainId;
         private readonly IMetaStorage metaStorage;
-        readonly BucketsHoldOperator bucketsHoldOperator;
-
+        private readonly IBucketFactory bucketFactory;
         LocalBucket? currentBucket;
+
+        readonly Dictionary<BucketAddress, IBucket> buckets = new Dictionary<BucketAddress, IBucket>();
 
         public int CurrentBucketId => currentBucket?.Bucket.Info.BucketId ?? 0;
 
@@ -35,23 +36,36 @@ namespace LogBins
             this.trainId = trainId;
             BagInfo = bagInfo;
             this.metaStorage = metaStorage;
-
+            this.bucketFactory = bucketFactory;
             if (bagInfo.BagSettings.PerBucketMessages > (2 << 16))
                 throw new ArgumentException("PerBucketMessages must be < 2^16");
+        }
 
-            this.bucketsHoldOperator = new BucketsHoldOperator(bucketFactory);
+        async Task<IBucket> GetBucket(BucketAddress address)
+        {
+            IBucket bucket;
+            if (currentBucket != null && currentBucket.Value.Bucket.Info.Equals(address))
+                bucket = currentBucket.Value.Bucket;
+            else
+            {
+                if (!buckets.TryGetValue(address, out bucket))
+                    bucket = buckets[address] = await bucketFactory.CreateBucket(address);
+            }
+            return bucket;
         }
 
         public async Task<LogEntry> ReadEntry(ulong address)
         {
-            var b = await bucketsHoldOperator.GetBucket(new BucketAddress
+            var baddr = new BucketAddress
             {
                 TrainId = address.TrainId(),
                 BagId = address.BagId(),
                 BucketId = address.Index() / BagInfo.BagSettings.PerBucketMessages
-            });
+            };
 
-            return await b
+            var bucket = await GetBucket(baddr);
+
+            return await bucket
                 .GetEntry(address.Index() % BagInfo.BagSettings.PerBucketMessages);
         }
 
@@ -62,7 +76,7 @@ namespace LogBins
                 var b_i = await metaStorage
                     .GetCurrentBucketIndexForBag(this.BagInfo.Address);
 
-                var b = await bucketsHoldOperator.GetBucket(new BucketAddress
+                var b = await GetBucket(new BucketAddress
                 {
                     TrainId = trainId,
                     BagId = BagInfo.Address.BagId,
@@ -87,7 +101,7 @@ namespace LogBins
                 .Value
                 .MessagesCount == BagInfo.BagSettings.PerBucketMessages)
             {
-                var b = await bucketsHoldOperator.GetBucket(new BucketAddress
+                var b = await GetBucket(new BucketAddress
                 {
                     TrainId = trainId,
                     BagId = BagInfo.Address.BagId,
@@ -118,12 +132,8 @@ namespace LogBins
 
         public async Task Close()
         {
-            await bucketsHoldOperator.Close();
-        }
-
-        public void Dispose()
-        {
-            bucketsHoldOperator.Dispose();
-        }
+            foreach(var b in buckets.Values)
+                await b.Store();
+        }        
     }
 }

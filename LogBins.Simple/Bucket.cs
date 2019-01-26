@@ -50,7 +50,7 @@ namespace LogBins.Simple
             return Task.FromResult(entries.Count);
         }
 
-        public Task Close()
+        public Task Store()
         {
             if (isModified)
             {

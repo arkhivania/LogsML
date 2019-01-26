@@ -30,7 +30,12 @@ namespace LogBins.Tests
             var startDateTime = DateTime.Now;
             var dateTime = startDateTime;
 
-            var dateIndex = new SkipList<DateTime, ulong>((a, b) => (float)System.Math.Abs(a.Subtract(b).TotalSeconds));
+            var dt_start = DateTime.Now;
+            var st_ticks = new DateTime(2018, 1, 1).Ticks;
+            var dt_st_ticks = dt_start.Ticks;
+            var delta = dt_st_ticks - st_ticks;
+
+            var dateIndex = new SkipList<long, ulong>((a, b) => (float)Math.Abs(a - b));
 
             using (var t_b = new TrainBag(1,
                 new BucketFactory(new ZipStoreFactory(sp)),
@@ -48,7 +53,7 @@ namespace LogBins.Tests
                         var addr = await t_b.Push(new LogEntry { Message = l });
                         clist.Add(new ER(addr, l));
 
-                        dateIndex.Add(dateTime, addr);
+                        dateIndex.Add(dateTime.Ticks, addr);
                         dateTime += TimeSpan.FromSeconds((random.NextDouble() - 0.2) * 20.0);
 
                         if ((++index) % 100000 == 0)
@@ -58,8 +63,9 @@ namespace LogBins.Tests
                     TestContext.Progress.WriteLine($"Iteration: {k}, time = {pushSW.ElapsedMilliseconds} ms");
                 }
 
+                var lrg_d = startDateTime + TimeSpan.FromSeconds((dateTime - startDateTime).TotalSeconds / 2);
                 var kv_s = dateIndex
-                    .Larger(startDateTime + TimeSpan.FromSeconds((dateTime - startDateTime).TotalSeconds/2), false)
+                    .Larger(lrg_d.Ticks, false)
                     .Take(10).ToArray();
 
                 foreach (var v in kv_s.Select(q => q.Value))
@@ -67,8 +73,15 @@ namespace LogBins.Tests
                     var mess = await t_b.ReadEntry(v);
                     var mt = mess.Message;
                 }
-                    
 
+                var rebT = Stopwatch.StartNew();
+
+                var dateIndex2 = new SkipList<long, ulong>((a, b) => (float)Math.Abs(a - b));
+                foreach (var a in dateIndex.KeyValues())
+                    dateIndex2.Add(a.Key, a.Value);
+                rebT.Stop();
+
+                TestContext.Progress.WriteLine($"Rebuild time: {rebT.ElapsedMilliseconds} ms");
                 //TestContext.WriteLine($"Push time: {pushSW.ElapsedMilliseconds} ms, Speed: {(index * 1000) / (pushSW.ElapsedMilliseconds + 1)} msgs/sec");
             }
         }

@@ -13,6 +13,6 @@ namespace LogBins.Base
         Task<AddEntryResult> AddEntry(LogEntry logEntry);
         Task<LogEntry> GetEntry(int index);
 
-        Task Close();
+        Task Store();
     }
 }
