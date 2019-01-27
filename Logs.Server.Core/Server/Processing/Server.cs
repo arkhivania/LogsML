@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using LogBins.Base;
+using Logs.Server.Core.IndexStore.Base;
 using Logs.Server.Core.Server.Base;
 
 namespace Logs.Server.Core.Server.Processing
@@ -18,11 +19,15 @@ namespace Logs.Server.Core.Server.Processing
 
         readonly SkipListIndex<long, ulong> primaryIndex
             = new SkipListIndex<long, ulong>("PI", (a, b) => System.Math.Abs(a - b));
+        private readonly IIndexStore<long, ulong> piStore;
 
         public Server(Settings settings, 
             IMetaStorage metaStorage, 
-            IBucketFactory bucketFactory)
+            IBucketFactory bucketFactory,
+            IIndexStore<long, ulong> piStore)
         {
+            this.piStore = piStore;
+
             trainBags = new LogBins.TrainBag[settings.TrainsCount];
             trainBagsSemaphores = new SemaphoreSlim[settings.TrainsCount];
 
@@ -36,11 +41,15 @@ namespace Logs.Server.Core.Server.Processing
                     });
                 trainBagsSemaphores[i] = new SemaphoreSlim(1, 1);
             }
+
+            piStore.Load(primaryIndex);
         }
 
         public void Dispose()
         {
             Task.WhenAll(trainBagsSemaphores.Select(q => q.WaitAsync()));
+
+            piStore.Store(primaryIndex);
 
             foreach (var t in trainBags)
                 t.Dispose();

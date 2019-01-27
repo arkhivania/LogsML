@@ -12,6 +12,7 @@ namespace Logs.Server.Core.Server.Processing
         readonly SkipList<TKey, TValue> skipList;
 
         public string Name { get; }
+        public long Count => skipList.Count;
 
         public SkipListIndex(string name, 
             Func<TKey, TKey, float> distanceFunc)

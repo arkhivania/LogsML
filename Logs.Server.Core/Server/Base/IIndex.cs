@@ -8,6 +8,7 @@ namespace Logs.Server.Core.Server.Base
         where TKey : IComparable<TKey>
     {
         string Name { get; }
+        long Count { get; }
 
         IEnumerable<(TKey, TValue)> Read();
         IEnumerable<(TKey, TValue)> ReadReversed();

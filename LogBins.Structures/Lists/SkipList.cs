@@ -8,6 +8,7 @@ namespace LogBins.Structures.Lists
     public class SkipList<TKey, TValue>
         where TKey : IComparable<TKey>
     {
+        public long Count { get; private set; } = 0;
         readonly internal Element<TKey, TValue> leftTopItem;
         readonly Element<TKey, TValue> rightTopItem;
 
@@ -215,6 +216,7 @@ namespace LogBins.Structures.Lists
                 Add(key, value, SearchForAddLeft);
             else
                 Add(key, value, SearchForAddRight);
+            Count++;
         }
 
         public IEnumerable<KeyValuePair<TKey, TValue>> KeyValues()

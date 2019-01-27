@@ -1,4 +1,5 @@
-﻿using Logs.Server.Core.Server.Base;
+﻿using Logs.Server.Core.IndexStore.Base;
+using Logs.Server.Core.Server.Base;
 using Logs.Server.Core.Storage.Base;
 using Ninject;
 using NUnit.Framework;
@@ -23,8 +24,14 @@ namespace LogBins.Tests
                 kernel.Load<Logs.Server.Core.Server.ModuleDefault>();
                 kernel.Load<Logs.Server.Core.Storage.Module>();
                 kernel.Load<Logs.Server.Core.SimpleBuckets.Module>();
+                kernel.Load<Logs.Server.Core.IndexStore.Module>();
 
                 var df = @".\Data";
+
+                kernel.Bind<IndexStoreSettings>().ToConstant(new IndexStoreSettings
+                {
+                    Folder = @".\Data\Indices"
+                });
 
                 kernel.Bind<StorageSettings>()
                     .ToConstant(new StorageSettings { TargetFolder = df });
