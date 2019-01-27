@@ -1,4 +1,5 @@
-﻿using Ninject.Modules;
+﻿using LogBins.Base;
+using Ninject.Modules;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -9,7 +10,8 @@ namespace Logs.Server.Core.SimpleBuckets
     {
         public override void Load()
         {
-            throw new NotImplementedException();
+            Kernel.Bind<IBucketFactory>()
+                .To<LogBins.Simple.BucketFactory>();
         }
     }
 }

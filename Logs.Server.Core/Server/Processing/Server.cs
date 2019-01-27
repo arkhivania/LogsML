@@ -9,7 +9,7 @@ using Logs.Server.Core.Server.Base;
 
 namespace Logs.Server.Core.Server.Processing
 {
-    class Server : IServer
+    class Server : IServer, IDisposable
     {
         readonly LogBins.TrainBag[] trainBags;
 
@@ -31,6 +31,17 @@ namespace Logs.Server.Core.Server.Processing
                     });
                 trainBagsSemaphores[i] = new SemaphoreSlim(1, 1);
             }
+        }
+
+        public void Dispose()
+        {
+            Task.WhenAll(trainBagsSemaphores.Select(q => q.WaitAsync()));
+
+            foreach (var t in trainBags)
+                t.Dispose();
+
+            foreach (var s in trainBagsSemaphores)
+                s.Release();
         }
 
         public async Task PutMessage(LogEntry logEntry)

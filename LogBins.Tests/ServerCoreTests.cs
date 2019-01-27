@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace LogBins.Tests
 {
@@ -14,13 +15,14 @@ namespace LogBins.Tests
     {
         [Test]
         [TestCase(@"..\..\..\..\TestsData\lgs\syslog_short.zip")]
-        public void Store(string file)
+        public async Task Store(string file)
         {
             using (var kernel = new StandardKernel(new NinjectSettings { LoadExtensions = false }))
             {
                 kernel.Load<Logs.Server.Core.Server.Module>();
                 kernel.Load<Logs.Server.Core.Server.ModuleDefault>();
                 kernel.Load<Logs.Server.Core.Storage.Module>();
+                kernel.Load<Logs.Server.Core.SimpleBuckets.Module>();
 
                 var df = @".\Data";
 
@@ -29,8 +31,6 @@ namespace LogBins.Tests
 
                 if (!Directory.Exists(df))
                     Directory.CreateDirectory(df);
-
-
 
                 var server = kernel.Get<IServer>();
 
@@ -41,7 +41,7 @@ namespace LogBins.Tests
                     if (ticks == lastTicks || ticks < lastTicks)
                         ticks++;
 
-                    server.PutMessage(new LogEntry { DateTime = ticks, Message = m });
+                    await server.PutMessage(new LogEntry { DateTime = ticks, Message = m });
                     lastTicks = ticks;
                 }
             }
