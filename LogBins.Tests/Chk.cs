@@ -40,7 +40,7 @@ namespace LogBins.Tests
                 var pushSW = Stopwatch.StartNew();
                 foreach (var l in ZipLogs.LoadLines(fileName))
                 {
-                    var addr = await t_b.Push(new LogEntry { Message = l });
+                    var addr = await t_b.Push(l);
                     clist.Add(new ER(addr, l));
 
                     if ((++index) % 100000 == 0)
@@ -62,7 +62,7 @@ namespace LogBins.Tests
                 foreach (var s in clist)
                 {
                     var entry = await t_b.ReadEntry(s.EntryAddress);
-                    if (entry.Message != s.Message)
+                    if (entry != s.Message)
                         throw new InvalidOperationException("Read write error");
 
                     if ((++index) % 100000 == 0)

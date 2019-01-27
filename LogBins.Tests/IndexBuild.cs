@@ -50,7 +50,7 @@ namespace LogBins.Tests
 
                     foreach (var l in ZipLogs.LoadLines(fileName))
                     {
-                        var addr = await t_b.Push(new LogEntry { Message = l });
+                        var addr = await t_b.Push(l);
                         clist.Add(new ER(addr, l));
 
                         dateIndex.Add(dateTime.Ticks, addr);
@@ -66,13 +66,7 @@ namespace LogBins.Tests
                 var lrg_d = startDateTime + TimeSpan.FromSeconds((dateTime - startDateTime).TotalSeconds / 2);
                 var kv_s = dateIndex
                     .Larger(lrg_d.Ticks, false)
-                    .Take(10).ToArray();
-
-                foreach (var v in kv_s.Select(q => q.Value))
-                {
-                    var mess = await t_b.ReadEntry(v);
-                    var mt = mess.Message;
-                }
+                    .Take(10).ToArray();                
 
                 var rebT = Stopwatch.StartNew();
 

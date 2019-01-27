@@ -10,8 +10,8 @@ namespace LogBins.Base
         BucketAddress Info { get; }
 
         Task<int> QueryMessagesCount();
-        Task<AddEntryResult> AddEntry(LogEntry logEntry);
-        Task<LogEntry> GetEntry(int index);
+        Task<AddEntryResult> AddEntry(string logEntry);
+        Task<string> GetEntry(int index);
 
         Task Store();
     }

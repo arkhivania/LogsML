@@ -8,7 +8,7 @@ namespace LogBins.Simple
 {
     class Bucket : IBucket
     {
-        readonly List<LogEntry> entries = new List<LogEntry>();
+        readonly List<string> entries = new List<string>();
         private readonly IBucketStoreFactory bucketStoreFactory;
         bool isModified = false;
         public BucketAddress Info { get; }
@@ -31,7 +31,7 @@ namespace LogBins.Simple
             entries.AddRange(store.LoadEntries());
         }
 
-        public Task<AddEntryResult> AddEntry(LogEntry logEntry)
+        public Task<AddEntryResult> AddEntry(string logEntry)
         {
             isModified = true;
             entries.Add(logEntry);
@@ -61,7 +61,7 @@ namespace LogBins.Simple
             return Task.CompletedTask;
         }
 
-        public Task<LogEntry> GetEntry(int index)
+        public Task<string> GetEntry(int index)
         {
             return Task.FromResult(entries[index]);
         }

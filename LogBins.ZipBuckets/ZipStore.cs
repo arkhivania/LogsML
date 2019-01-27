@@ -19,7 +19,7 @@ namespace LogBins.ZipBuckets
             this.bucketStreamProvider = bucketStreamProvider;
         }
 
-        public IEnumerable<LogEntry> LoadEntries()
+        public IEnumerable<string> LoadEntries()
         {
             byte[] buff = new byte[256];
             using (var compressedStream = bucketStreamProvider.OpenRead(address))
@@ -43,13 +43,13 @@ namespace LogBins.ZipBuckets
                         string message;
                         message = Encoding.UTF8.GetString(buff, 0, cnt);
 
-                        yield return new LogEntry { Message = message };
+                        yield return message;
                     }
                 }
             }
         }
 
-        public void StoreEntries(IEnumerable<LogEntry> entries)
+        public void StoreEntries(IEnumerable<string> entries)
         {
             using (var compressedStream = bucketStreamProvider.OpenWrite(address))
             using (var zip = new ICSharpCode.SharpZipLib.GZip.GZipOutputStream(compressedStream))
@@ -60,7 +60,7 @@ namespace LogBins.ZipBuckets
 
                 foreach (var e in entries)
                 {
-                    var bytes = Encoding.UTF8.GetBytes(e.Message);
+                    var bytes = Encoding.UTF8.GetBytes(e);
                     bw.Write((int)bytes.Length);
                     zip.Write(bytes, 0, bytes.Length);
                 }

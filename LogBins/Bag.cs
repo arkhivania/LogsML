@@ -54,7 +54,7 @@ namespace LogBins
             return bucket;
         }
 
-        public async Task<LogEntry> ReadEntry(ulong address)
+        public async Task<string> ReadEntry(ulong address)
         {
             var baddr = new BucketAddress
             {
@@ -92,7 +92,7 @@ namespace LogBins
             }
         }
 
-        public async Task<ulong> AddMessage(Base.LogEntry message)
+        public async Task<ulong> AddMessage(string message)
         {
             if (currentBucket == null)
                 await Init();            

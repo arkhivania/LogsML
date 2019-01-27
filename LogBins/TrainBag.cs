@@ -69,7 +69,7 @@ namespace LogBins
             }
         }
 
-        public async Task<LogEntry> ReadEntry(ulong address)
+        public async Task<string> ReadEntry(ulong address)
         {
             if (address.TrainId() != TrainId)
                 throw new InvalidOperationException("Wrong train ID");
@@ -90,7 +90,7 @@ namespace LogBins
             }
         }
 
-        public async Task<ulong> Push(Base.LogEntry logEntry)
+        public async Task<ulong> Push(string logEntry)
         {
             if (!initialized)
                 await Initialize();
@@ -101,7 +101,7 @@ namespace LogBins
                 AllCount++;
 
                 int finded = -1;
-                var ms = compare.GetMessageToken(logEntry.Message);
+                var ms = compare.GetMessageToken(logEntry);
 
                 for (int oiIndex = 0; oiIndex < Bags.Count; ++oiIndex)
                     if (compare.TheSame(Bags[oiIndex], ms))
@@ -135,7 +135,7 @@ namespace LogBins
                         TrainId = TrainId,
                         BagId = (ushort)Bags.Count
                     },
-                    BaseMessage = logEntry.Message,
+                    BaseMessage = logEntry,
                     BagSettings = new BagSettings { PerBucketMessages = 5000 }
                 };
 

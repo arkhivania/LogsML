@@ -8,7 +8,7 @@ namespace LogBins.Simple
 {
     public interface IBucketStore
     {
-        IEnumerable<LogEntry> LoadEntries();
-        void StoreEntries(IEnumerable<LogEntry> entries);
+        IEnumerable<string> LoadEntries();
+        void StoreEntries(IEnumerable<string> entries);
     }
 }
