@@ -28,7 +28,7 @@ namespace Logs.Server.Core.Storage.Processing
 
         public Task<BagInfo[]> LoadBags(ushort trainId)
         {
-            var fp = Path.Combine(metaFolder, $"bgs_{trainId}");
+            var fp = Path.Combine(metaFolder, $"bgs_{trainId:D3}");
             if (!File.Exists(fp))
                 return Task.FromResult(new BagInfo[] { });
 
@@ -41,21 +41,21 @@ namespace Logs.Server.Core.Storage.Processing
         {
             var bags = new List<BagInfo>(await LoadBags(trainId));
             bags.Add(bagInfo);
-            var fp = Path.Combine(metaFolder, $"bgs_{trainId}");
+            var fp = Path.Combine(metaFolder, $"bgs_{trainId:D3}");
             File.WriteAllText(fp, 
                 JsonConvert.SerializeObject(bags.ToArray()));
         }
 
         public Task StoreCurrentBucketIndexForBag(BagAddress bagAddress, int id)
         {
-            var indexFP = Path.Combine(metaFolder, $"ix_{bagAddress.TrainId}_{bagAddress.BagId}");
+            var indexFP = Path.Combine(metaFolder, $"ix_{bagAddress.TrainId:D3}_{bagAddress.BagId:D3}");
             File.WriteAllText(indexFP, id.ToString(CultureInfo.InvariantCulture));
             return Task.CompletedTask;
         }
 
         public Task<int> GetCurrentBucketIndexForBag(BagAddress bagAddress)
         {
-            var indexFP = Path.Combine(metaFolder, $"ix_{bagAddress.TrainId}_{bagAddress.BagId}");
+            var indexFP = Path.Combine(metaFolder, $"ix_{bagAddress.TrainId:D3}_{bagAddress.BagId:D3}");
             if (!File.Exists(indexFP))
                 return Task.FromResult(0);
 
