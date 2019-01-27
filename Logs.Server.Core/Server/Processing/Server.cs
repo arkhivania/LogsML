@@ -16,7 +16,12 @@ namespace Logs.Server.Core.Server.Processing
         readonly SemaphoreSlim[] trainBagsSemaphores;
         readonly Random random = new Random();
 
-        public Server(Settings settings, IMetaStorage metaStorage, IBucketFactory bucketFactory)
+        readonly SkipListIndex<long, ulong> primaryIndex
+            = new SkipListIndex<long, ulong>("PI", (a, b) => System.Math.Abs(a - b));
+
+        public Server(Settings settings, 
+            IMetaStorage metaStorage, 
+            IBucketFactory bucketFactory)
         {
             trainBags = new LogBins.TrainBag[settings.TrainsCount];
             trainBagsSemaphores = new SemaphoreSlim[settings.TrainsCount];
@@ -51,8 +56,11 @@ namespace Logs.Server.Core.Server.Processing
 
             try
             {
-                await trainBags[index].Push(logEntry.Message);
-            }finally
+                var addr = await trainBags[index].Push(logEntry.Message);
+                lock (primaryIndex)
+                    primaryIndex.Add(logEntry.DateTime, addr);
+            }
+            finally
             {
                 trainBagsSemaphores[index].Release();
             }
