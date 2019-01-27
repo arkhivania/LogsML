@@ -1,8 +1,10 @@
 ﻿using Logs.Server.Core.Server.Base;
+using Logs.Server.Core.Storage.Base;
 using Ninject;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 
 namespace LogBins.Tests
@@ -19,6 +21,16 @@ namespace LogBins.Tests
                 kernel.Load<Logs.Server.Core.Server.Module>();
                 kernel.Load<Logs.Server.Core.Server.ModuleDefault>();
                 kernel.Load<Logs.Server.Core.Storage.Module>();
+
+                var df = @".\Data";
+
+                kernel.Bind<StorageSettings>()
+                    .ToConstant(new StorageSettings { TargetFolder = df });
+
+                if (!Directory.Exists(df))
+                    Directory.CreateDirectory(df);
+
+
 
                 var server = kernel.Get<IServer>();
 

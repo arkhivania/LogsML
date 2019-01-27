@@ -1,4 +1,5 @@
-﻿using LogBins.Simple;
+﻿using LogBins.Base;
+using LogBins.Simple;
 using LogBins.ZipBuckets;
 using Ninject.Modules;
 using System;
@@ -11,6 +12,10 @@ namespace Logs.Server.Core.Storage
     {
         public override void Load()
         {
+            Kernel.Bind<IMetaStorage>()
+                .To<Processing.MetaStorage>()
+                .InSingletonScope();
+
             Kernel.Bind<IBucketStreamProvider>()
                 .To<Processing.FolderStreamProvider>();
 

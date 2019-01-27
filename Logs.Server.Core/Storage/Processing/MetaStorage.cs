@@ -12,11 +12,16 @@ namespace Logs.Server.Core.Storage.Processing
     {
         private readonly StorageSettings storageSettings;
 
+        readonly string metaFolder;
+
         public MetaStorage(StorageSettings storageSettings)
         {
             this.storageSettings = storageSettings;
             if (!Directory.Exists(storageSettings.TargetFolder))
                 throw new InvalidOperationException($"Folder '{storageSettings.TargetFolder}' doesn't exist");
+            metaFolder = Path.Combine(storageSettings.TargetFolder, "Meta");
+            if (!Directory.Exists(metaFolder))
+                Directory.CreateDirectory(metaFolder);
         }
 
         public Task<int> GetCurrentBucketIndexForBag(BagAddress bagAddress)
