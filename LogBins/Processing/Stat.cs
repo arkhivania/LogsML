@@ -1,9 +1,11 @@
-﻿using System.Collections.Generic;
+﻿using LogBins.Base;
+using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace LogBins.Processing
 {
-    class Stat
+    class Stat : IToken
     {
         public HashSet<string> StatDict { get; set; }
 
@@ -58,6 +60,15 @@ namespace LogBins.Processing
                 return false;
 
             return intersections * 100 / hashIntersect.Count > 85;
+        }
+
+        public bool TheSame(IToken token)
+        {
+            var statToken = token as Stat;
+            if (statToken == null)
+                throw new ArgumentException("Not my token");
+
+            return Compare(statToken);
         }
     }
 }

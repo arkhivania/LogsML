@@ -23,10 +23,12 @@ namespace LogBins
         
         public ushort TrainId { get; }
         
-        readonly IBagCompare<Stat> compare = new HSCompare();
+        readonly IBagCompare compare = new HSCompare();
 
         public List<Bag> Bags { get; } = new List<Bag>();
         readonly Dictionary<int, Bag> bagIdToBag = new Dictionary<int, Bag>();
+
+        readonly Dictionary<Bag, IToken> bagTokens = new Dictionary<Bag, IToken>();
 
         bool initialized = false;
 
@@ -104,11 +106,14 @@ namespace LogBins
                 var ms = compare.GetMessageToken(logEntry);
 
                 for (int oiIndex = 0; oiIndex < Bags.Count; ++oiIndex)
-                    if (compare.TheSame(Bags[oiIndex], ms))
+                {
+                    var bt = bagTokens[Bags[oiIndex]];
+                    if (bt.TheSame(ms))
                     {
                         finded = oiIndex;
                         break;
                     }
+                }
 
                 if (finded == -1 && Bags.Count == MAX_BAGS_INDEX + 1)
                     finded = Bags.Count - 1;
@@ -142,6 +147,7 @@ namespace LogBins
                 await metaStorage.RegisterNewBag(TrainId, newBagInfo);
 
                 var noib = new Bag(TrainId, newBagInfo, metaStorage, bucketFactory);
+                bagTokens[noib] = ms;
                 await noib.Init();
 
                 bagIdToBag[noib.BagInfo.Address.BagId] = noib;

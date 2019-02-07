@@ -2,6 +2,10 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>    
+    <Authors>arkhivania</Authors>
+    <Company>LogBins</Company>
+    <PackageOutputPath>c:\Development\dev3\RefPackages\$(Configuration)\</PackageOutputPath>
   </PropertyGroup>
 
 </Project>

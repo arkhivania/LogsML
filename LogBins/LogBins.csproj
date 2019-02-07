@@ -8,6 +8,9 @@
     <CodeAnalysisRuleSet>LogBins.ruleset</CodeAnalysisRuleSet>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <WarningsAsErrors />
+    <Authors>arkhivania</Authors>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageOutputPath>c:\Development\dev3\RefPackages\$(Configuration)\</PackageOutputPath>
   </PropertyGroup>
 
   <ItemGroup>
