@@ -7,9 +7,16 @@ namespace LogBins.Processing
 {
     class Stat : IToken
     {
+        private readonly float threshold;
+
         public HashSet<string> StatDict { get; set; }
 
-        public static Stat Build(string message)
+        public Stat(float threshold)
+        {
+            this.threshold = threshold;
+        }
+
+        public static Stat Build(string message, float threshold)
         {
             var cnts = new HashSet<string>();
             foreach (var w in TextTool.Words(message)
@@ -21,7 +28,7 @@ namespace LogBins.Processing
                 cnts.Add(w);
             }
 
-            return new Stat
+            return new Stat(threshold)
             {
                 StatDict = cnts
             };
@@ -59,7 +66,7 @@ namespace LogBins.Processing
             if (hashIntersect.Count == 0)
                 return false;
 
-            return intersections * 100 / hashIntersect.Count > 85;
+            return (intersections * 100.0f / hashIntersect.Count) > threshold;
         }
 
         public bool TheSame(IToken token)
