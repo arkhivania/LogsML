@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 
 namespace LogBins.Processing
 {
@@ -9,7 +10,7 @@ namespace LogBins.Processing
     {
         private readonly float threshold;
 
-        public HashSet<string> StatDict { get; set; }
+        public HashSet<UInt32> StatDict { get; set; }
 
         public Stat(float threshold)
         {
@@ -18,20 +19,23 @@ namespace LogBins.Processing
 
         public static Stat Build(string message, float threshold)
         {
-            var cnts = new HashSet<string>();
-            foreach (var w in TextTool.Words(message)
-                .Select(q => q.ToLower()))
+            using (var crc = new Crc32())
             {
-                if (w.Length <= 2)
-                    continue;
+                var cnts = new HashSet<UInt32>();
+                foreach (var w in TextTool.Words(message)
+                    .Select(q => q.ToLower()))
+                {
+                    if (w.Length <= 2)
+                        continue;
 
-                cnts.Add(w);
+                    cnts.Add(BitConverter.ToUInt32(crc.ComputeHash(Encoding.UTF8.GetBytes(w)), 0));
+                }
+
+                return new Stat(threshold)
+                {
+                    StatDict = cnts
+                };
             }
-
-            return new Stat(threshold)
-            {
-                StatDict = cnts
-            };
         }
 
         public bool Compare(Stat s2)
@@ -45,8 +49,8 @@ namespace LogBins.Processing
             if (diff * 100 / m_l > 10)
                 return false;
 
-            HashSet<string> hashIntersect;
-            HashSet<string> checkStat;
+            HashSet<UInt32> hashIntersect;
+            HashSet<UInt32> checkStat;
             if (StatDict.Count <= s2.StatDict.Count)
             {
                 hashIntersect = StatDict;
