@@ -19,23 +19,20 @@ namespace LogBins.Processing
 
         public static Stat Build(string message, float threshold)
         {
-            using (var crc = new Crc32())
+
+            var cnts = new HashSet<UInt32>();
+            foreach (var w in TextTool.Words(message.AsMemory()))
             {
-                var cnts = new HashSet<UInt32>();
-                foreach (var w in TextTool.Words(message)
-                    .Select(q => q.ToLower()))
-                {
-                    if (w.Length <= 2)
-                        continue;
+                if (w.Length <= 2)
+                    continue;
 
-                    cnts.Add(BitConverter.ToUInt32(crc.ComputeHash(Encoding.UTF8.GetBytes(w)), 0));
-                }
-
-                return new Stat(threshold)
-                {
-                    StatDict = cnts
-                };
+                cnts.Add(Crc32.CalculateHash(w.Span, 0, w.Length));
             }
+
+            return new Stat(threshold)
+            {
+                StatDict = cnts
+            };
         }
 
         public bool Compare(Stat s2)

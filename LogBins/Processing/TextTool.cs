@@ -6,33 +6,32 @@ namespace LogBins.Processing
 {
     static class TextTool
     {
-        public static IEnumerable<string> Words(string text)
+        public static IEnumerable<ReadOnlyMemory<char>> Words(ReadOnlyMemory<char> text)
         {
-            if (string.IsNullOrEmpty(text))
+            if (text.Length == 0)
                 yield break;
 
-            char[] curBuffer = new char[24];
+            int curStart = 0;
             int curLength = 0;
             for (int i = 0; i < text.Length; ++i)
             {
-                var c = text[i];
+                var c = text.Span[i];
                 if (char.IsLetter(c))
-                {
-                    if (curBuffer.Length <= curLength)
-                        Array.Resize(ref curBuffer, curBuffer.Length * 2);
-
-                    curBuffer[curLength] = c;
                     curLength++;
-                }
-                else if (curLength != 0)
+                else
                 {
-                    yield return new string(curBuffer, 0, curLength);
-                    curLength = 0;
+                    if (curLength != 0)
+                    {
+                        yield return text.Slice(curStart, curLength);
+                        curLength = 0;                        
+                    }
+
+                    curStart = i;
                 }
             }
 
             if (curLength != 0)
-                yield return new string(curBuffer, 0, curLength);
+                yield return text.Slice(curStart, curLength);
         }
     }
 }
