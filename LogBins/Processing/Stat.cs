@@ -19,7 +19,6 @@ namespace LogBins.Processing
 
         public static Stat Build(string message, float threshold)
         {
-
             var cnts = new HashSet<UInt32>();
             foreach (var w in TextTool.Words(message.AsMemory()))
             {
