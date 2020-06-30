@@ -181,6 +181,7 @@ namespace LogBins
         public void Dispose()
         {
             Close().Wait();
+            semaphore.Dispose();
         }
     }
 }
