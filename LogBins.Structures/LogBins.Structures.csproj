@@ -6,6 +6,7 @@
     <Authors>arkhivania</Authors>
     <Company>LogBins</Company>
     <PackageOutputPath>c:\Development\dev3\RefPackages\$(Configuration)\</PackageOutputPath>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
   </PropertyGroup>
 
 </Project>
